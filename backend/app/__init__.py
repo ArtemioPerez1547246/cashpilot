@@ -1,1 +1,1 @@
-from .engine.models import *
+"""CashPilot app package."""

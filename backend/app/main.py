@@ -1,30 +1,115 @@
-from app.engine.forecast import cost_of_waiting, forecast_cash_flow, optimize_plan
+from __future__ import annotations
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+from app.engine.forecast import (
+    cost_of_waiting,
+    forecast_cash_flow,
+    investigate,
+    load_transactions,
+    optimize_plan,
+)
+
+app = FastAPI(title="CashPilot", version="0.1.0")
 
 
-def test_normal_scenario_matches_expected_values():
-    result = forecast_cash_flow("A_normal")
-    assert result["ending_cash"] == 2000
-    assert result["min_balance"] == 1800
-    assert result["min_date"] == "2026-10-16"
+class SimulateRequest(BaseModel):
+    scenario: str = Field(...)
+    lever_ids: list[str] = Field(default_factory=list)
+    extra_changes: list[dict] = Field(default_factory=list)
 
 
-def test_delayed_receipt_scenario_has_negative_ending():
-    result = forecast_cash_flow("B_delayed_receipt")
-    assert result["ending_cash"] < 0
-    assert result["min_balance"] <= -2200
+class OptimizeRequest(BaseModel):
+    scenario: str = Field(...)
+    decision_date: str = Field(...)
 
 
-def test_optimizer_returns_feasible_plan_when_possible():
-    plan = optimize_plan("A_normal", "2026-10-12")
-    assert "levers" in plan
-    assert plan["decision_date"] == "2026-10-12"
+class InvestigateRequest(BaseModel):
+    scenario: str = Field(...)
+    question: str = Field(...)
 
 
-def test_waiting_cost_is_non_decreasing():
-    costs = cost_of_waiting("A_normal")
-    assert costs[0]["total_cost"] <= costs[1]["total_cost"] <= costs[2]["total_cost"]
+class EventRequest(BaseModel):
+    type: str = Field(...)
+    txn: str | None = None
+    days: int | None = None
 
 
-def test_min_reserve_is_honored_for_normal_scenario():
-    result = forecast_cash_flow("A_normal")
-    assert result["first_below_reserve"] == "2026-10-16"
+@app.get("/api/health")
+def health():
+    return {"ok": True, "model_provider": "stub", "version": "0.1.0"}
+
+
+@app.get("/api/overview")
+def overview(scenario: str = "A_normal"):
+    settings = {
+        "business": "Paletería demo",
+        "today": "2026-10-12",
+        "start_date": "2026-10-12",
+        "horizon_days": 14,
+        "min_reserve": 1500,
+        "opening_cash": 8000,
+    }
+    return {
+        "business": settings["business"],
+        "today": settings["today"],
+        "settings": settings,
+        "transactions": load_transactions(),
+        "forecast": forecast_cash_flow(scenario),
+    }
+
+
+@app.get("/api/forecast")
+def forecast(scenario: str = "A_normal", decision_date: str | None = None):
+    return forecast_cash_flow(scenario, [], decision_date or "2026-10-12")
+
+
+@app.post("/api/simulate")
+def simulate(payload: SimulateRequest):
+    return forecast_cash_flow(payload.scenario, payload.lever_ids, extra_changes=payload.extra_changes)
+
+
+@app.post("/api/optimize")
+def optimize(payload: OptimizeRequest):
+    return optimize_plan(payload.scenario, payload.decision_date)
+
+
+@app.get("/api/cost-of-waiting")
+def cost_waiting_route(scenario: str = "A_normal"):
+    return cost_of_waiting(scenario)
+
+
+@app.post("/api/investigate")
+def investigate_endpoint(payload: InvestigateRequest):
+    return investigate(payload.scenario, payload.question)
+
+
+@app.post("/api/events")
+def events(payload: EventRequest):
+    return {"alert_id": f"alert-{payload.type}-{payload.txn or 'none'}", "status": "created"}
+
+
+@app.get("/api/alerts")
+def alerts():
+    return {"alerts": []}
+
+
+@app.get("/api/actions")
+def actions():
+    return {"actions": []}
+
+
+@app.post("/api/actions/{action_id}/approve")
+def approve(action_id: str):
+    return {"id": action_id, "status": "approved"}
+
+
+@app.post("/api/actions/{action_id}/reject")
+def reject(action_id: str):
+    return {"id": action_id, "status": "rejected"}
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_, exc: HTTPException):
+    return {"error": exc.detail, "detail": exc.detail}
