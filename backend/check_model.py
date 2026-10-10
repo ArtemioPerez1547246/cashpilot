@@ -1,7 +1,7 @@
 """One-command check that a real model drives the CashPilot agent.
 
     cd backend
-    MODEL_PROVIDER=akamai AKAMAI_API_KEY=<team key> python check_model.py
+    MODEL_PROVIDER=akamai AKAMAI_API_KEY=hk_tJdu2590Knp2Ig6zAcbu5Z00jw9fB5Lvf0TuhOPMUUE python check_model.py
 
 (AKAMAI_BASE_URL and AKAMAI_MODEL default to the hackathon endpoint.)
 PASS means: the model answered, it called at least 3 engine tools, and every dollar figure
