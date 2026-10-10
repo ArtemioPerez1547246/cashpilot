@@ -129,7 +129,8 @@ if st.button("Investigate now"):
 if inv:
     badge = "✅ every number verified against the engine" if inv["verified"] else f"⚠️ unverified: {inv['unverified_amounts']}"
     st.caption(f"{badge} · mode: {inv['mode']}")
-    st.markdown(inv["memo"].replace("\n", "  \n"))
+    # Escape $ so Streamlit doesn't render "$8,400 ... $2,100" as a math formula.
+    st.markdown(inv["memo"].replace("$", "\\$").replace("\n", "  \n"))
     with st.expander(f"Tool trace ({len(inv['trace'])} calls)"):
         for t in inv["trace"]:
             st.write(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}")

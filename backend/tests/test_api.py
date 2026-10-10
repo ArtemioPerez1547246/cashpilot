@@ -75,3 +75,19 @@ def test_verifier_catches_invented_numbers():
     assert verify("Cash falls to -$2,200.00 [T15]", outputs)["verified"]
     bad = verify("Cash falls to $9,999 [T42]", outputs)
     assert not bad["verified"] and bad["unknown_txn_ids"] == ["T42"]
+
+
+def test_verifier_catches_wrong_weekdays():
+    from app.agent.verifier import wrong_weekdays
+    # The real model wrote these on Oct 10; Oct 16, 2026 is a Friday.
+    assert wrong_weekdays("Lowest daily balance: -$2,200 on 2026-10-16 (Monday).")
+    assert wrong_weekdays("payroll lands Monday, Oct 16")
+    assert not wrong_weekdays("Lowest balance on 2026-10-16 (Friday); payroll Friday, Oct 16; 10-15 Thursday")
+    assert not verify("Cash falls to -$2,200.00 on 2026-10-16 (Monday)", [{"min_balance": -2200.0}])["verified"]
+
+
+def test_forecast_tool_gives_weekdays():
+    from app.agent.tools import forecast_cash_flow, start_trace
+    start_trace()
+    f = forecast_cash_flow(scenario="disruption")
+    assert f["min_weekday"] == "Friday" and f["days"][0]["weekday"] == "Monday"

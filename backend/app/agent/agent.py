@@ -90,7 +90,8 @@ def investigate(scenario="live", question="Will we run short of cash this week? 
             memo = str(agent(f"Scenario: {scenario}. Question: {question}"))
             check = verify(memo, get_trace()["outputs"])
             if not check["verified"]:
-                memo = str(agent("These figures are not in any tool output: "
+                memo = str(agent("These items are wrong or not in any tool output "
+                                 "(weekday names must come from the forecast tool): "
                                  f"{check['unverified_amounts'] + check['unknown_txn_ids']}. "
                                  "Rewrite the memo using only numbers returned by the tools."))
         except Exception as exc:  # model down, bad credentials, etc. The demo must keep working.

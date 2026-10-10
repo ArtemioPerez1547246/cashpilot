@@ -5,6 +5,7 @@ dashboard can show exactly which tools the agent used. The full outputs are also
 verifier can check every dollar figure in the memo against them.
 """
 import contextvars
+import datetime as dt
 import time
 
 from strands import tool
@@ -13,6 +14,10 @@ from ..actions import draft_for_lever
 from ..engine import scenarios as S
 
 _trace = contextvars.ContextVar("trace", default=None)
+
+
+def weekday(iso_date):
+    return dt.date.fromisoformat(iso_date).strftime("%A")
 
 
 def start_trace():
@@ -49,9 +54,13 @@ def get_transactions(scenario: str = "live", category: str = "", txn_id: str = "
 def forecast_cash_flow(scenario: str = "live", lever_ids: list[str] | None = None,
                        decision_date: str = "2026-10-12") -> dict:
     """Day-by-day cash forecast: closing balance each day, the minimum balance and its date,
-    the first day below the reserve, and the shortfall versus the reserve."""
+    the first day below the reserve, and the shortfall versus the reserve. Each day includes its
+    weekday name; use only these weekday names, never work them out yourself."""
     t0 = time.time()
     f = S.forecast(scenario, lever_ids or [], decision_date).model_dump()
+    for d in f["days"]:
+        d["weekday"] = weekday(d["date"])
+    f["min_weekday"] = weekday(f["min_date"])
     return _record("forecast_cash_flow", {"scenario": scenario, "lever_ids": lever_ids or [],
                                           "decision_date": decision_date}, f, t0,
                    f"min ${f['min_balance']:,.0f} on {f['min_date']}, ending ${f['ending_cash']:,.0f}")
@@ -60,7 +69,8 @@ def forecast_cash_flow(scenario: str = "live", lever_ids: list[str] | None = Non
 @tool
 def find_drivers(scenario: str = "live") -> dict:
     """Explain WHY cash dips: outflows up to the lowest day (largest first) and any inflows that
-    arrive later than planned, with how much each late inflow lowers the minimum balance."""
+    arrive later than planned. impact_on_min_balance = how much HIGHER the lowest balance would be
+    if that payment had arrived on time, i.e. how much the late payment HURTS."""
     t0 = time.time()
     d = S.drivers(scenario).model_dump()
     top = d["pushed_inflows"][0]["txn_id"] if d["pushed_inflows"] else (d["outflows"][0]["txn_id"] if d["outflows"] else "-")
