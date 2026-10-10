@@ -1,19 +1,35 @@
-version: '3.9'
+# Runs on the Akamai Linode: API + Streamlit dashboard behind Caddy (automatic HTTPS).
+# Start/update with deploy/deploy.sh
 services:
-  cashpilot-api:
-    build: ../backend
-    container_name: cashpilot-api
-    ports:
-      - "8000:8000"
+  api:
+    build: ..
+    command: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000
+    env_file: .env
     environment:
-      - MODEL_PROVIDER=stub
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+      - CASHPILOT_STATE_DIR=/state
+    volumes:
+      - state:/state
+    restart: unless-stopped
 
-  cashpilot-ui:
-    build: ../frontend
-    container_name: cashpilot-ui
-    ports:
-      - "8501:8501"
+  ui:
+    build: ..
+    command: streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
     environment:
-      - API_BASE_URL=http://cashpilot-api:8000
-    command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
+      - API_BASE=http://api:8000
+    depends_on: [api]
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [api, ui]
+    restart: unless-stopped
+
+volumes:
+  state:
+  caddy_data:

@@ -1,45 +1,37 @@
-from __future__ import annotations
+"""Checks that every dollar figure and transaction ID in a memo came from a tool output."""
+import re
 
-from ..engine.forecast import load_transactions, forecast_cash_flow, drivers, optimize_plan, cost_of_waiting
+from ..engine import scenarios as S
 
-
-def get_transactions(date_range=None, category=None, txn_id=None):
-    txns = load_transactions()
-    if txn_id:
-        txns = [txn for txn in txns if txn.get("id") == txn_id]
-    if category:
-        txns = [txn for txn in txns if txn.get("category") == category]
-    if date_range:
-        start, end = date_range
-        txns = [txn for txn in txns if start <= txn.get("date") <= end]
-    return {"transactions": txns}
+_DOLLARS = re.compile(r"-?\$\s?-?\d[\d,]*(?:\.\d+)?")
+_TXN = re.compile(r"\bT\d{2}\b")
 
 
-def forecast_cash_flow_tool(scenario, lever_ids=None, decision_date=None):
-    return forecast_cash_flow(scenario, lever_ids or [], decision_date)
+def _numbers(obj, acc):
+    if isinstance(obj, bool):
+        return acc
+    if isinstance(obj, (int, float)):
+        acc.add(round(abs(float(obj)), 2))
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            _numbers(v, acc)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            _numbers(v, acc)
+    return acc
 
 
-def find_drivers(scenario):
-    return {"drivers": drivers(scenario)}
-
-
-def optimize_plan_tool(scenario, decision_date):
-    return optimize_plan(scenario, decision_date)
-
-
-def cost_of_waiting_tool(scenario):
-    return {"results": cost_of_waiting(scenario)}
-
-
-def draft_action(scenario, lever, txn_id):
-    return {
-        "id": "A1",
-        "idempotency_key": f"{scenario}:{lever}:{txn_id}",
-        "lever_id": lever,
-        "type": "email_draft",
-        "to": "supplier",
-        "subject": "Cash support request",
-        "body": "This is a draft action; it is not yet approved.",
-        "source_txn_ids": [txn_id],
-        "status": "pending",
-    }
+def verify(memo, tool_outputs, tolerance=1.0):
+    known = _numbers(tool_outputs, set())
+    known |= _numbers([lv.cost_usd for lv in S.LEVERS], set())
+    known |= _numbers(S.settings(), set())  # reserve and opening cash are known inputs
+    unverified = []
+    for m in _DOLLARS.findall(memo):
+        val = abs(float(m.replace("$", "").replace(",", "").replace(" ", "")))
+        if not any(abs(val - k) <= tolerance for k in known):
+            unverified.append(m.strip())
+    ids = {t.id for t in S.BASE}
+    cited = sorted(set(_TXN.findall(memo)))
+    bad_ids = [i for i in cited if i not in ids]
+    return {"verified": not unverified and not bad_ids, "unverified_amounts": unverified,
+            "unknown_txn_ids": bad_ids, "cited_txn_ids": [i for i in cited if i in ids]}

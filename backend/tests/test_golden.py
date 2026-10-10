@@ -1,26 +1,38 @@
-from app.engine.forecast import cost_of_waiting, forecast_cash_flow, optimize_plan
+from app.engine.loader import load_dataset
+from app.engine.forecast import forecast
 
+RAW, TXNS = load_dataset()
+B = RAW["business"]
+RESERVE = 1500
+OUTSIDE = "2026-10-21"  # after the 7-day window (Oct 12-18)
 
-def test_forecast_minimum_is_reported_and_non_negative_when_feasible():
-    result = forecast_cash_flow("A_normal")
-    assert "min_balance" in result
-    assert result["min_date"]
-    assert result["min_balance"] <= result["ending_cash"]
+def run(txns):
+    return forecast(txns, B["start_cash"], B["start_date"], B["horizon_days"], RESERVE)
 
+def move(txns, tx_id, new_date):
+    return [t.model_copy(update={"date": new_date}) if t.id == tx_id else t for t in txns]
 
-def test_optimize_returns_valid_plan_shape():
-    plan = optimize_plan("A_normal", "2026-10-12")
-    assert "decision_date" in plan
-    assert "levers" in plan
-    assert "total_cost" in plan
+def find(category):
+    return next(t.id for t in TXNS if t.category == category)
 
+def test_normal_operations():
+    r = run(TXNS)
+    assert (r.ending_cash, r.min_balance) == (2000, 1800)
+    assert r.first_negative is None and r.shortfall_vs_reserve == 0
 
-def test_cost_of_waiting_is_monotone():
-    values = cost_of_waiting("A_normal")
-    costs = [entry["total_cost"] for entry in values]
-    assert costs[0] <= costs[1] <= costs[2]
+def test_late_invoice():
+    r = run(move(TXNS, find("catering_invoice"), OUTSIDE))
+    assert (r.ending_cash, r.min_balance, r.min_date) == (-2000, -2200, "2026-10-16")
+    assert r.first_negative == "2026-10-16"
+    assert r.shortfall_vs_reserve == 3700
 
+def test_oven_deferral_alone_is_fragile():
+    late = move(TXNS, find("catering_invoice"), OUTSIDE)
+    r = run(move(late, find("equipment"), OUTSIDE))
+    assert (r.ending_cash, r.min_balance) == (500, 300)
+    assert r.first_negative is None
+    assert r.shortfall_vs_reserve == 1200   # still below the $1,500 reserve
 
-def test_disruption_scenario_has_breached_cash():
-    result = forecast_cash_flow("B_delayed_receipt")
-    assert result["min_balance"] < 0 or result["first_below_reserve"] is not None
+def test_daily_balances_late_invoice():
+    r = run(move(TXNS, find("catering_invoice"), OUTSIDE))
+    assert [d.closing for d in r.days] == [8950, 7900, 8300, 7100, -2200, -400, -2000]
