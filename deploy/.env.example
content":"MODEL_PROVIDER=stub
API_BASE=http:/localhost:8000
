@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+git pull --ff-only
+# Ensure container rebuild is done after code changes
+docker compose up -d --build

@@ -1,0 +1,174 @@
+from __future__ import annotations
+
+import sqlite3
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+DB_PATH = Path(__file__).resolve().parents[2] / "data" / "actions.db"
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+
+class Action(BaseModel):
+    id: str
+    idempotency_key: str
+    lever_id: str
+    type: str
+    to: str
+    subject: str = ""
+    body: str = ""
+    source_txn_ids: list[str] = Field(default_factory=list)
+    status: str = "pending"
+
+
+@dataclass
+class ActionStore:
+    db_path: Path = DB_PATH
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS actions (
+                id TEXT PRIMARY KEY,
+                idempotency_key TEXT NOT NULL UNIQUE,
+                lever_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                to TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                body TEXT NOT NULL,
+                source_txn_ids TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.commit()
+        return conn
+
+    def create(self, action: Action) -> Action:
+        conn = self._connect()
+        conn.execute(
+            "INSERT OR REPLACE INTO actions (id, idempotency_key, lever_id, type, to, subject, body, source_txn_ids, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                action.id,
+                action.idempotency_key,
+                action.lever_id,
+                action.type,
+                action.to,
+                action.subject,
+                action.body,
+                ";".join(action.source_txn_ids),
+                action.status,
+                datetime.utcnow().isoformat(),
+            ),
+        )
+        conn.commit()
+        conn.close()
+        return action
+
+    def get(self, action_id: str) -> Action | None:
+        conn = self._connect()
+        row = conn.execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
+        conn.close()
+        if row is None:
+            return None
+        return Action(
+            id=row["id"],
+            idempotency_key=row["idempotency_key"],
+            lever_id=row["lever_id"],
+            type=row["type"],
+            to=row["to"],
+            subject=row["subject"],
+            body=row["body"],
+            source_txn_ids=row["source_txn_ids"].split(";") if row["source_txn_ids"] else [],
+            status=row["status"],
+        )
+
+    def by_idempotency(self, key: str) -> Action | None:
+        conn = self._connect()
+        row = conn.execute("SELECT * FROM actions WHERE idempotency_key = ?", (key,)).fetchone()
+        conn.close()
+        if row is None:
+            return None
+        return self.get(row["id"])
+
+    def list(self) -> list[Action]:
+        conn = self._connect()
+        rows = conn.execute("SELECT * FROM actions ORDER BY created_at DESC").fetchall()
+        conn.close()
+        return [
+            Action(
+                id=row["id"],
+                idempotency_key=row["idempotency_key"],
+                lever_id=row["lever_id"],
+                type=row["type"],
+                to=row["to"],
+                subject=row["subject"],
+                body=row["body"],
+                source_txn_ids=row["source_txn_ids"].split(";") if row["source_txn_ids"] else [],
+                status=row["status"],
+            )
+            for row in rows
+        ]
+
+    def update_status(self, action_id: str, status: str) -> Action | None:
+        action = self.get(action_id)
+        if action is None:
+            return None
+        action.status = status
+        return self.create(action)
+
+
+STORE = ActionStore()
+
+
+def draft_action(payload: dict[str, Any]) -> Action:
+    key = payload.get("idempotency_key") or f"{payload.get('scenario', 'normal')}:{payload.get('lever_id', 'unknown')}:{payload.get('source_txn_ids', [''])[0]}"
+    existing = STORE.by_idempotency(key)
+    if existing is not None:
+        return existing
+
+    action = Action(
+        id=payload.get("id") or f"A{len(STORE.list()) + 1:03d}",
+        idempotency_key=key,
+        lever_id=payload["lever_id"],
+        type=payload.get("type", "email_draft"),
+        to=payload.get("to", "Vendor"),
+        subject=payload.get("subject", ""),
+        body=payload.get("body", ""),
+        source_txn_ids=payload.get("source_txn_ids", []),
+        status="pending",
+    )
+    return STORE.create(action)
+
+
+def get_action(action_id: str) -> Action | None:
+    return STORE.get(action_id)
+
+
+def list_actions() -> list[dict[str, Any]]:
+    return [a.model_dump() for a in STORE.list()]
+
+
+def approve_action(action_id: str) -> Action | None:
+    action = STORE.get(action_id)
+    if action is None:
+        return None
+    action.status = "approved"
+    return STORE.create(action)
+
+
+def reject_action(action_id: str) -> Action | None:
+    action = STORE.get(action_id)
+    if action is None:
+        return None
+    action.status = "rejected"
+    return STORE.create(action)
+
+
+__all__ = ["Action", "draft_action", "get_action", "list_actions", "approve_action", "reject_action"]
