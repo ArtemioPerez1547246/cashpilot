@@ -27,13 +27,15 @@ def make_model():
         from strands.models.openai import OpenAIModel
         return OpenAIModel(client_args={"api_key": os.environ["AKAMAI_API_KEY"],
                                         "base_url": os.getenv("AKAMAI_BASE_URL", "https://ws.akamai-workshops.com/v1")},
-                           model_id=os.getenv("AKAMAI_MODEL", "hackathon-chat"))
+                           model_id=os.getenv("AKAMAI_MODEL", "hackathon-chat"),
+                           params={"max_tokens": int(os.getenv("MODEL_MAX_TOKENS", "4096"))})
     if p == "openai":  # any OpenAI-compatible service (OpenAI itself, or another provider's base URL)
         from strands.models.openai import OpenAIModel
         args = {"api_key": os.environ["OPENAI_API_KEY"]}
         if os.getenv("OPENAI_BASE_URL"):
             args["base_url"] = os.environ["OPENAI_BASE_URL"]
-        return OpenAIModel(client_args=args, model_id=os.environ["OPENAI_MODEL"])
+        return OpenAIModel(client_args=args, model_id=os.environ["OPENAI_MODEL"],
+                           params={"max_tokens": int(os.getenv("MODEL_MAX_TOKENS", "4096"))})
     if p == "bedrock":
         from strands.models import BedrockModel
         return BedrockModel(model_id=os.environ["BEDROCK_MODEL"],
@@ -93,6 +95,7 @@ def investigate(scenario="live", question="Will we run short of cash this week? 
                                  "Rewrite the memo using only numbers returned by the tools."))
         except Exception as exc:  # model down, bad credentials, etc. The demo must keep working.
             error, memo = f"{type(exc).__name__}: {exc}", None
+            start_trace()  # the stub re-runs the tools; show only its calls, not both runs
     if memo is None:
         mode = "stub" if mode == "stub" else f"stub (model failed: {error})"
         memo = _template_memo(scenario)
@@ -101,3 +104,4 @@ def investigate(scenario="live", question="Will we run short of cash this week? 
     return {"memo": memo, "trace": tr["calls"], "verified": check["verified"],
             "unverified_amounts": check["unverified_amounts"], "cited_txn_ids": check["cited_txn_ids"],
             "mode": mode}
+    
