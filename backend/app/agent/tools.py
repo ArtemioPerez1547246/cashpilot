@@ -6,6 +6,7 @@ verifier can check every dollar figure in the memo against them.
 """
 import contextvars
 import time
+import datetime as dt
 
 from strands import tool
 
@@ -52,6 +53,9 @@ def forecast_cash_flow(scenario: str = "live", lever_ids: list[str] | None = Non
     the first day below the reserve, and the shortfall versus the reserve."""
     t0 = time.time()
     f = S.forecast(scenario, lever_ids or [], decision_date).model_dump()
+    for d in f["days"]:
+        d["weekday"] = dt.date.fromisoformat(d["date"]).strftime("%A")
+    f["min_weekday"] = dt.date.fromisoformat(f["min_date"]).strftime("%A")
     return _record("forecast_cash_flow", {"scenario": scenario, "lever_ids": lever_ids or [],
                                           "decision_date": decision_date}, f, t0,
                    f"min ${f['min_balance']:,.0f} on {f['min_date']}, ending ${f['ending_cash']:,.0f}")
