@@ -1,0 +1,21 @@
+[
+  {"id": "T01", "date": "2026-10-12", "amount": 1200, "direction": "in", "category": "card_sales", "counterparty": "Card settlement", "description": "Card settlement day 1", "status": "expected", "certainty": "expected"},
+  {"id": "T02", "date": "2026-10-13", "amount": 1000, "direction": "in", "category": "card_sales", "counterparty": "Card settlement", "description": "Card settlement day 2", "status": "expected", "certainty": "expected"},
+  {"id": "T03", "date": "2026-10-14", "amount": 1100, "direction": "in", "category": "card_sales", "counterparty": "Card settlement", "description": "Card settlement day 3", "status": "expected", "certainty": "expected"},
+  {"id": "T04", "date": "2026-10-15", "amount": 1300, "direction": "in", "category": "card_sales", "counterparty": "Card settlement", "description": "Card settlement day 4", "status": "expected", "certainty": "expected"},
+  {"id": "T05", "date": "2026-10-16", "amount": 2100, "direction": "in", "category": "card_sales", "counterparty": "Card settlement", "description": "Card settlement day 5", "status": "expected", "certainty": "expected"},
+  {"id": "T06", "date": "2026-10-17", "amount": 2600, "direction": "in", "category": "card_sales", "counterparty": "Card settlement", "description": "Card settlement day 6", "status": "expected", "certainty": "expected"},
+  {"id": "T07", "date": "2026-10-18", "amount": 2200, "direction": "in", "category": "card_sales", "counterparty": "Card settlement", "description": "Card settlement day 7", "status": "expected", "certainty": "expected"},
+  {"id": "T08", "date": "2026-10-15", "amount": 4000, "direction": "in", "category": "catering_invoice", "counterparty": "Ridgeline Corp", "description": "Catering invoice INV-2041", "status": "expected", "certainty": "expected"},
+  {"id": "T09", "date": "2026-10-12", "amount": 250, "direction": "out", "category": "cleaning", "counterparty": "Linen & cleaning", "description": "Cleaning service", "status": "scheduled", "certainty": "committed"},
+  {"id": "T10", "date": "2026-10-13", "amount": 1700, "direction": "out", "category": "supplies", "counterparty": "Produce supplier", "description": "Produce supplier", "status": "scheduled", "certainty": "committed"},
+  {"id": "T11", "date": "2026-10-13", "amount": 350, "direction": "out", "category": "marketing", "counterparty": "Local ads", "description": "Local ads", "status": "scheduled", "certainty": "committed"},
+  {"id": "T12", "date": "2026-10-14", "amount": 700, "direction": "out", "category": "utilities", "counterparty": "Electric & gas", "description": "Utility bill", "status": "scheduled", "certainty": "committed"},
+  {"id": "T13", "date": "2026-10-18", "amount": 3800, "direction": "out", "category": "rent", "counterparty": "Landlord", "description": "Monthly rent", "status": "scheduled", "certainty": "committed"},
+  {"id": "T14", "date": "2026-10-15", "amount": 2500, "direction": "out", "category": "equipment", "counterparty": "Vendor", "description": "Combi oven purchase", "status": "scheduled", "certainty": "committed"},
+  {"id": "T15", "date": "2026-10-16", "amount": 8400, "direction": "out", "category": "payroll", "counterparty": "Staff", "description": "Biweekly payroll", "status": "scheduled", "certainty": "committed"},
+  {"id": "T16", "date": "2026-10-16", "amount": 2100, "direction": "out", "category": "supplies", "counterparty": "Meat & dairy supplier", "description": "Meat & dairy supplier", "status": "scheduled", "certainty": "committed"},
+  {"id": "T17", "date": "2026-10-16", "amount": 900, "direction": "out", "category": "tax", "counterparty": "Tax authority", "description": "Sales tax remittance", "status": "scheduled", "certainty": "committed"},
+  {"id": "T18", "date": "2026-10-17", "amount": 450, "direction": "out", "category": "insurance", "counterparty": "Insurance", "description": "Liability insurance premium", "status": "scheduled", "certainty": "committed"},
+  {"id": "T19", "date": "2026-10-17", "amount": 350, "direction": "out", "category": "fees", "counterparty": "Card processor", "description": "Card processing fees", "status": "scheduled", "certainty": "committed"}
+]

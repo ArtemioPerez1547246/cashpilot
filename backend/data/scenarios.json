@@ -1,0 +1,4 @@
+[
+  {"id": "base", "label": "Base forecast", "changes": []},
+  {"id": "disruption", "label": "Wholesale client pays 10 days late", "changes": [{"op": "shift", "txn": "T08", "days": 10}]}
+]

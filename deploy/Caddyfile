@@ -1,0 +1,8 @@
+# Caddyfile for HTTPS reverse proxy
+cashpilot.localhost {
+    reverse_proxy cashpilot-api:8000
+}
+
+cashpilot-ui.localhost {
+    reverse_proxy cashpilot-ui:8501
+}
