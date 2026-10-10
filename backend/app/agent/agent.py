@@ -23,11 +23,17 @@ def provider():
 
 def make_model():
     p = provider()
-    if p in ("akamai", "openai"):
+    if p == "akamai":
         from strands.models.openai import OpenAIModel
         return OpenAIModel(client_args={"api_key": os.environ["AKAMAI_API_KEY"],
-                                        "base_url": os.environ["AKAMAI_BASE_URL"]},
-                           model_id=os.environ["AKAMAI_MODEL"])
+                                        "base_url": os.getenv("AKAMAI_BASE_URL", "https://ws.akamai-workshops.com/v1")},
+                           model_id=os.getenv("AKAMAI_MODEL", "hackathon-chat"))
+    if p == "openai":  # any OpenAI-compatible service (OpenAI itself, or another provider's base URL)
+        from strands.models.openai import OpenAIModel
+        args = {"api_key": os.environ["OPENAI_API_KEY"]}
+        if os.getenv("OPENAI_BASE_URL"):
+            args["base_url"] = os.environ["OPENAI_BASE_URL"]
+        return OpenAIModel(client_args=args, model_id=os.environ["OPENAI_MODEL"])
     if p == "bedrock":
         from strands.models import BedrockModel
         return BedrockModel(model_id=os.environ["BEDROCK_MODEL"],
