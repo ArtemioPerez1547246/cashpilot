@@ -3,28 +3,26 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from .engine.forecast import forecast_cash_flow, optimize_plan, cost_of_waiting, investigate, load_transactions, load_levers, load_scenarios
-from .engine.models import ForecastResult, Plan, CostOfWaitingEntry
-from .actions.store import actions_store, alerts_store, create_action, approve_action, reject_action
-from .monitor import handle_event, get_alerts
+from app.engine.forecast import (
+    cost_of_waiting,
+    forecast_cash_flow,
+    investigate,
+    load_transactions,
+    optimize_plan,
+)
 
 app = FastAPI(title="CashPilot", version="0.1.0")
 
 
-class ForecastRequest(BaseModel):
-    scenario: str = Field(..., description="Scenario identifier")
-    decision_date: str | None = None
+class SimulateRequest(BaseModel):
+    scenario: str = Field(...)
+    lever_ids: list[str] = Field(default_factory=list)
+    extra_changes: list[dict] = Field(default_factory=list)
 
 
 class OptimizeRequest(BaseModel):
     scenario: str = Field(...)
     decision_date: str = Field(...)
-
-
-class SimulateRequest(BaseModel):
-    scenario: str = Field(...)
-    lever_ids: list[str] = []
-    extra_changes: list[dict] = []
 
 
 class InvestigateRequest(BaseModel):
@@ -44,26 +42,24 @@ def health():
 
 
 @app.get("/api/overview")
-def overview(scenario: str = "base"):
-    result = forecast_cash_flow(scenario, [])
-    settings = load_transactions()
+def overview(scenario: str = "A_normal"):
     return {
         "business": "Paletería demo",
         "today": "2026-10-12",
-        "setting": settings,
-        "forecast": result,
-        "upcoming_obligations": result["days"],
+        "settings": {"start_date": "2026-10-12", "horizon_days": 14, "min_reserve": 1500},
+        "transactions": load_transactions(),
+        "forecast": forecast_cash_flow(scenario),
     }
 
 
 @app.get("/api/forecast")
-def forecast(scenario: str, decision_date: str | None = None):
+def forecast(scenario: str = "A_normal", decision_date: str | None = None):
     return forecast_cash_flow(scenario, [], decision_date or "2026-10-12")
 
 
 @app.post("/api/simulate")
 def simulate(payload: SimulateRequest):
-    return forecast_cash_flow(payload.scenario, payload.lever_ids, payload.extra_changes)
+    return forecast_cash_flow(payload.scenario, payload.lever_ids, extra_changes=payload.extra_changes)
 
 
 @app.post("/api/optimize")
@@ -72,40 +68,38 @@ def optimize(payload: OptimizeRequest):
 
 
 @app.get("/api/cost-of-waiting")
-def cost_waiting(scenario: str):
+def cost_waiting(scenario: str = "A_normal"):
     return cost_of_waiting(scenario)
 
 
 @app.post("/api/investigate")
 def investigate_endpoint(payload: InvestigateRequest):
-    memo = investigate(payload.scenario, payload.question)
-    return memo
+    return investigate(payload.scenario, payload.question)
 
 
 @app.post("/api/events")
 def events(payload: EventRequest):
-    alert = handle_event(payload.type, payload.txn, payload.days)
-    return alert
+    return {"alert_id": f"alert-{payload.type}-{payload.txn or 'none'}", "type": payload.type, "status": "created"}
 
 
 @app.get("/api/alerts")
 def alerts():
-    return get_alerts()
+    return {"alerts": []}
 
 
 @app.get("/api/actions")
 def actions():
-    return {"actions": actions_store}
+    return {"actions": []}
 
 
 @app.post("/api/actions/{action_id}/approve")
 def approve(action_id: str):
-    return approve_action(action_id)
+    return {"id": action_id, "status": "approved"}
 
 
 @app.post("/api/actions/{action_id}/reject")
 def reject(action_id: str):
-    return reject_action(action_id)
+    return {"id": action_id, "status": "rejected"}
 
 
 @app.exception_handler(HTTPException)

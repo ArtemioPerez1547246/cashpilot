@@ -1,4 +1,9 @@
 [
-  {"id": "base", "label": "Base forecast", "changes": []},
-  {"id": "disruption", "label": "Wholesale client pays 10 days late", "changes": [{"op": "shift", "txn": "T08", "days": 10}]}
+  {"id": "A_normal", "label": "Normal scenario", "changes": []},
+  {"id": "B_delayed_receipt", "label": "Delayed receipt", "changes": [{"op": "move", "txn": "T08", "date": "2026-10-21"}]},
+  {"id": "1_defer_oven", "label": "Defer oven purchase", "changes": [{"op": "move", "txn": "T14", "date": "2026-10-21"}]},
+  {"id": "2_supplier_net7", "label": "Supplier net-7", "changes": [{"op": "move", "txn": "T16", "date": "2026-10-23"}, {"op": "move", "txn": "T10", "date": "2026-10-20"}]},
+  {"id": "3_invoice_advance", "label": "Invoice advance", "changes": [{"op": "add_inflow", "id": "advance_T08", "date": "2026-10-15", "amount": 3200, "description": "Invoice advance"}]},
+  {"id": "4_oven_plus_supplier", "label": "Oven plus supplier", "changes": [{"op": "move", "txn": "T14", "date": "2026-10-21"}, {"op": "move", "txn": "T16", "date": "2026-10-23"}, {"op": "move", "txn": "T10", "date": "2026-10-20"}]},
+  {"id": "disruption", "label": "Disruption alias", "changes": [{"op": "move", "txn": "T08", "date": "2026-10-21"}]}
 ]

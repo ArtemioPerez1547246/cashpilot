@@ -1,308 +1,42 @@
 {
- "business": {
-  "name": "Maple & Main Bistro",
-  "start_date": "2026-10-12",
-  "start_cash": 8000,
-  "horizon_days": 7
- },
- "transactions": [
-  {
-   "id": "T01",
-   "date": "2026-10-12",
-   "type": "inflow",
-   "category": "card_sales",
-   "description": "Card settlement day 1",
-   "amount": 1200,
-   "status": "expected",
-   "flexibility": "fixed",
-   "note": ""
+  "business": {
+    "name": "Maple & Main Bistro",
+    "start_date": "2026-10-12",
+    "start_cash": 8000,
+    "horizon_days": 7
   },
-  {
-   "id": "T02",
-   "date": "2026-10-13",
-   "type": "inflow",
-   "category": "card_sales",
-   "description": "Card settlement day 2",
-   "amount": 1000,
-   "status": "expected",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T03",
-   "date": "2026-10-14",
-   "type": "inflow",
-   "category": "card_sales",
-   "description": "Card settlement day 3",
-   "amount": 1100,
-   "status": "expected",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T04",
-   "date": "2026-10-15",
-   "type": "inflow",
-   "category": "card_sales",
-   "description": "Card settlement day 4",
-   "amount": 1300,
-   "status": "expected",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T05",
-   "date": "2026-10-16",
-   "type": "inflow",
-   "category": "card_sales",
-   "description": "Card settlement day 5",
-   "amount": 2100,
-   "status": "expected",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T06",
-   "date": "2026-10-17",
-   "type": "inflow",
-   "category": "card_sales",
-   "description": "Card settlement day 6",
-   "amount": 2600,
-   "status": "expected",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T07",
-   "date": "2026-10-18",
-   "type": "inflow",
-   "category": "card_sales",
-   "description": "Card settlement day 7",
-   "amount": 2200,
-   "status": "expected",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T08",
-   "date": "2026-10-15",
-   "type": "inflow",
-   "category": "catering_invoice",
-   "description": "Ridgeline Corp catering invoice INV-2041",
-   "amount": 4000,
-   "status": "expected",
-   "flexibility": "delayable",
-   "note": "Net-30 due Oct 15; client has paid 6-9 days late twice before"
-  },
-  {
-   "id": "T09",
-   "date": "2026-10-12",
-   "type": "outflow",
-   "category": "cleaning",
-   "description": "Linen & cleaning service",
-   "amount": 250,
-   "status": "scheduled",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T10",
-   "date": "2026-10-13",
-   "type": "outflow",
-   "category": "supplies",
-   "description": "Produce supplier",
-   "amount": 1700,
-   "status": "scheduled",
-   "flexibility": "negotiable",
-   "note": "Vendor offers net-7 on request"
-  },
-  {
-   "id": "T11",
-   "date": "2026-10-13",
-   "type": "outflow",
-   "category": "marketing",
-   "description": "Local ads",
-   "amount": 350,
-   "status": "scheduled",
-   "flexibility": "discretionary",
-   "note": ""
-  },
-  {
-   "id": "T12",
-   "date": "2026-10-14",
-   "type": "outflow",
-   "category": "utilities",
-   "description": "Electric & gas",
-   "amount": 700,
-   "status": "scheduled",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T13",
-   "date": "2026-10-18",
-   "type": "outflow",
-   "category": "rent",
-   "description": "Monthly rent",
-   "amount": 3800,
-   "status": "scheduled",
-   "flexibility": "fixed",
-   "note": "Landlord grace date Oct 18; 5% late fee after"
-  },
-  {
-   "id": "T14",
-   "date": "2026-10-15",
-   "type": "outflow",
-   "category": "equipment",
-   "description": "Combi oven purchase (upgrade)",
-   "amount": 2500,
-   "status": "scheduled",
-   "flexibility": "discretionary",
-   "note": "Not yet delivered; vendor allows reschedule, no fee"
-  },
-  {
-   "id": "T15",
-   "date": "2026-10-16",
-   "type": "outflow",
-   "category": "payroll",
-   "description": "Biweekly payroll",
-   "amount": 8400,
-   "status": "scheduled",
-   "flexibility": "fixed",
-   "note": "Legal obligation; cannot defer"
-  },
-  {
-   "id": "T16",
-   "date": "2026-10-16",
-   "type": "outflow",
-   "category": "supplies",
-   "description": "Meat & dairy supplier",
-   "amount": 2100,
-   "status": "scheduled",
-   "flexibility": "negotiable",
-   "note": "Vendor offers net-7 on request"
-  },
-  {
-   "id": "T17",
-   "date": "2026-10-16",
-   "type": "outflow",
-   "category": "tax",
-   "description": "Sales tax remittance",
-   "amount": 900,
-   "status": "scheduled",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T18",
-   "date": "2026-10-17",
-   "type": "outflow",
-   "category": "insurance",
-   "description": "Liability insurance premium",
-   "amount": 450,
-   "status": "scheduled",
-   "flexibility": "fixed",
-   "note": ""
-  },
-  {
-   "id": "T19",
-   "date": "2026-10-17",
-   "type": "outflow",
-   "category": "fees",
-   "description": "Card processing fees",
-   "amount": 350,
-   "status": "scheduled",
-   "flexibility": "fixed",
-   "note": ""
-  }
- ],
- "scenarios": {
-  "B_delayed_receipt": {
-   "move": [
-    "T08",
-    "2026-10-21"
-   ]
-  }
- },
- "interventions": {
-  "1_defer_oven": [
-   [
-    "move",
-    "T14",
-    "2026-10-21"
-   ]
+  "transactions": [
+    {"id": "T01", "date": "2026-10-12", "type": "inflow", "category": "card_sales", "description": "Card settlement day 1", "amount": 1200, "status": "expected", "flexibility": "fixed", "note": ""},
+    {"id": "T02", "date": "2026-10-13", "type": "inflow", "category": "card_sales", "description": "Card settlement day 2", "amount": 1000, "status": "expected", "flexibility": "fixed", "note": ""},
+    {"id": "T03", "date": "2026-10-14", "type": "inflow", "category": "card_sales", "description": "Card settlement day 3", "amount": 1100, "status": "expected", "flexibility": "fixed", "note": ""},
+    {"id": "T04", "date": "2026-10-15", "type": "inflow", "category": "card_sales", "description": "Card settlement day 4", "amount": 1300, "status": "expected", "flexibility": "fixed", "note": ""},
+    {"id": "T05", "date": "2026-10-16", "type": "inflow", "category": "card_sales", "description": "Card settlement day 5", "amount": 2100, "status": "expected", "flexibility": "fixed", "note": ""},
+    {"id": "T06", "date": "2026-10-17", "type": "inflow", "category": "card_sales", "description": "Card settlement day 6", "amount": 2600, "status": "expected", "flexibility": "fixed", "note": ""},
+    {"id": "T07", "date": "2026-10-18", "type": "inflow", "category": "card_sales", "description": "Card settlement day 7", "amount": 2200, "status": "expected", "flexibility": "fixed", "note": ""},
+    {"id": "T08", "date": "2026-10-15", "type": "inflow", "category": "catering_invoice", "description": "Ridgeline Corp catering invoice INV-2041", "amount": 4000, "status": "expected", "flexibility": "delayable", "note": "Net-30 due Oct 15; client has paid 6-9 days late twice before"},
+    {"id": "T09", "date": "2026-10-12", "type": "outflow", "category": "cleaning", "description": "Linen & cleaning service", "amount": 250, "status": "scheduled", "flexibility": "fixed", "note": ""},
+    {"id": "T10", "date": "2026-10-13", "type": "outflow", "category": "supplies", "description": "Produce supplier", "amount": 1700, "status": "scheduled", "flexibility": "negotiable", "note": "Vendor offers net-7 on request"},
+    {"id": "T11", "date": "2026-10-13", "type": "outflow", "category": "marketing", "description": "Local ads", "amount": 350, "status": "scheduled", "flexibility": "discretionary", "note": ""},
+    {"id": "T12", "date": "2026-10-14", "type": "outflow", "category": "utilities", "description": "Electric & gas", "amount": 700, "status": "scheduled", "flexibility": "fixed", "note": ""},
+    {"id": "T13", "date": "2026-10-18", "type": "outflow", "category": "rent", "description": "Monthly rent", "amount": 3800, "status": "scheduled", "flexibility": "fixed", "note": "Landlord grace date Oct 18; 5% late fee after"},
+    {"id": "T14", "date": "2026-10-15", "type": "outflow", "category": "equipment", "description": "Combi oven purchase (upgrade)", "amount": 2500, "status": "scheduled", "flexibility": "discretionary", "note": "Not yet delivered; vendor allows reschedule, no fee"},
+    {"id": "T15", "date": "2026-10-16", "type": "outflow", "category": "payroll", "description": "Biweekly payroll", "amount": 8400, "status": "scheduled", "flexibility": "fixed", "note": "Legal obligation; cannot defer"},
+    {"id": "T16", "date": "2026-10-16", "type": "outflow", "category": "supplies", "description": "Meat & dairy supplier", "amount": 2100, "status": "scheduled", "flexibility": "negotiable", "note": "Vendor offers net-7 on request"},
+    {"id": "T17", "date": "2026-10-16", "type": "outflow", "category": "tax", "description": "Sales tax remittance", "amount": 900, "status": "scheduled", "flexibility": "fixed", "note": ""},
+    {"id": "T18", "date": "2026-10-17", "type": "outflow", "category": "insurance", "description": "Liability insurance premium", "amount": 450, "status": "scheduled", "flexibility": "fixed", "note": ""},
+    {"id": "T19", "date": "2026-10-17", "type": "outflow", "category": "fees", "description": "Card processing fees", "amount": 350, "status": "scheduled", "flexibility": "fixed", "note": ""}
   ],
-  "2_supplier_net7": [
-   [
-    "move",
-    "T16",
-    "2026-10-23"
-   ],
-   [
-    "move",
-    "T10",
-    "2026-10-20"
-   ]
-  ],
-  "3_invoice_advance": [
-   [
-    "add_inflow",
-    3200,
-    "2026-10-15"
-   ],
-   [
-    "note",
-    "3% fee ($120) due when invoice pays, outside window"
-   ]
-  ],
-  "4_oven_plus_supplier": [
-   [
-    "move",
-    "T14",
-    "2026-10-21"
-   ],
-   [
-    "move",
-    "T16",
-    "2026-10-23"
-   ],
-   [
-    "move",
-    "T10",
-    "2026-10-20"
-   ]
-  ]
- },
- "expected_results": {
-  "A_normal": {
-   "ending": 2000,
-   "lowest": 1800,
-   "lowest_date": "2026-10-16"
+  "scenarios": {
+    "B_delayed_receipt": {"move": ["T08", "2026-10-21"]},
+    "1_defer_oven": {"move": ["T14", "2026-10-21"]},
+    "2_supplier_net7": {"move": ["T16", "2026-10-23"]}
   },
-  "B_delayed_receipt": {
-   "ending": -2000,
-   "lowest": -2200,
-   "lowest_date": "2026-10-16"
+  "interventions": {
+    "1_defer_oven": [["move", "T14", "2026-10-21"]],
+    "2_supplier_net7": [["move", "T16", "2026-10-23"], ["move", "T10", "2026-10-20"]]
   },
-  "1_defer_oven": {
-   "ending": 500,
-   "lowest": 300,
-   "lowest_date": "2026-10-16"
-  },
-  "2_supplier_net7": {
-   "ending": 1800,
-   "lowest": 1600,
-   "lowest_date": "2026-10-16"
-  },
-  "3_invoice_advance": {
-   "ending": 1200,
-   "lowest": 1000,
-   "lowest_date": "2026-10-16"
-  },
-  "4_oven_plus_supplier": {
-   "ending": 4300,
-   "lowest": 4100,
-   "lowest_date": "2026-10-16"
+  "expected_results": {
+    "A_normal": {"ending": 2000, "lowest": 1800, "lowest_date": "2026-10-16"},
+    "B_delayed_receipt": {"ending": -2000, "lowest": -2200, "lowest_date": "2026-10-16"}
   }
- }
 }
