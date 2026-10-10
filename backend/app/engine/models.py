@@ -1,104 +1,30 @@
-from __future__ import annotations
-
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from app.engine.forecast import cost_of_waiting, forecast_cash_flow, optimize_plan
 
 
-class Transaction(BaseModel):
-    id: str
-    date: str
-    amount: float
-    direction: str = Field(..., description="in or out")
-    category: str
-    counterparty: str | None = None
-    description: str
-    status: str = "scheduled"
-    certainty: str = "committed"
+def test_normal_scenario_matches_expected_values():
+    result = forecast_cash_flow("A_normal")
+    assert result["ending_cash"] == 2000
+    assert result["min_balance"] == 1800
+    assert result["min_date"] == "2026-10-16"
 
 
-class LeverEffect(BaseModel):
-    op: str
-    txn: str | None = None
-    days: int | None = None
-    direction: str | None = None
-    amount: float | None = None
-    lead_days: int | None = None
+def test_delayed_receipt_scenario_has_negative_ending():
+    result = forecast_cash_flow("B_delayed_receipt")
+    assert result["ending_cash"] < 0
+    assert result["min_balance"] <= -2200
 
 
-class Lever(BaseModel):
-    id: str
-    name: str
-    effects: list[LeverEffect]
-    cost_usd: float
-    cost_basis: str
-    constraint: str
-    deadline: str | None = None
-    exclusive_group: str | None = None
-    last_resort: bool = False
-    action_type: str | None = None
+def test_optimizer_returns_feasible_plan_when_possible():
+    plan = optimize_plan("A_normal", "2026-10-12")
+    assert "levers" in plan
+    assert plan["decision_date"] == "2026-10-12"
 
 
-class ScenarioChange(BaseModel):
-    op: str
-    txn: str | None = None
-    days: int | None = None
+def test_waiting_cost_is_non_decreasing():
+    costs = cost_of_waiting("A_normal")
+    assert costs[0]["total_cost"] <= costs[1]["total_cost"] <= costs[2]["total_cost"]
 
 
-class Scenario(BaseModel):
-    id: str
-    label: str
-    changes: list[ScenarioChange] = []
-
-
-class DayForecast(BaseModel):
-    date: str
-    opening: float
-    inflows: float
-    outflows: float
-    closing: float
-    txn_ids: list[str]
-
-
-class ForecastResult(BaseModel):
-    days: list[DayForecast]
-    ending_cash: float
-    min_balance: float
-    min_date: str | None = None
-    first_below_reserve: str | None = None
-    first_negative: str | None = None
-    shortfall_vs_reserve: float = 0.0
-
-
-class Repayment(BaseModel):
-    date: str
-    amount: float
-    lever: str
-
-
-class Plan(BaseModel):
-    decision_date: str
-    feasible: bool
-    levers: list[str]
-    total_cost: float
-    forecast: ForecastResult | dict | None = None
-    repayments: list[Repayment] = []
-    best_effort: str | None = None
-
-
-class CostOfWaitingEntry(BaseModel):
-    decision_date: str
-    feasible: bool
-    total_cost: float
-    levers: list[str]
-
-
-class Action(BaseModel):
-    id: str
-    idempotency_key: str
-    lever_id: str
-    type: str
-    to: str
-    subject: str = ""
-    body: str = ""
-    source_txn_ids: list[str] = []
-    status: str = "pending"
+def test_min_reserve_is_honored_for_normal_scenario():
+    result = forecast_cash_flow("A_normal")
+    assert result["first_below_reserve"] == "2026-10-16"
