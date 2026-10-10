@@ -9,5 +9,6 @@ def load_dataset(path=DATA):
     txns = [Txn(id=t["id"], date=t["date"], amount=t["amount"],
                 direction="in" if t["type"] == "inflow" else "out",
                 category=t["category"], description=t["description"],
-                status=t["status"]) for t in raw["transactions"]]
+                status=t["status"],
+                flexibility=t.get("flexibility", "fixed"), note=t.get("note", "")) for t in raw["transactions"]]
     return raw, txns
