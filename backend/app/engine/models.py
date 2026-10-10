@@ -4,7 +4,7 @@ from typing import Literal, Optional
 class Txn(BaseModel):
     id: str
     date: str
-    amount: int
+    amount: float
     direction: Literal["in", "out"]
     category: str
     description: str
@@ -33,7 +33,7 @@ class ForecastResult(BaseModel):
 class Driver(BaseModel):
     txn_id: str
     date: str
-    amount: int
+    amount: float
     category: str
     description: str
     flexibility: str
@@ -41,7 +41,7 @@ class Driver(BaseModel):
 class PushedInflow(BaseModel):
     txn_id: str
     description: str
-    amount: int
+    amount: float
     planned_date: str
     actual_date: str
     impact_on_min_balance: float
@@ -50,6 +50,62 @@ class PushedInflow(BaseModel):
 class DriversResult(BaseModel):
     min_date: str
     min_balance: float
-    total_outflows_through_min_date: int
+    total_outflows_through_min_date: float
     outflows: list[Driver]
     pushed_inflows: list[PushedInflow]
+
+class Effect(BaseModel):
+    op: Literal["shift", "remove", "add"]
+    txn: Optional[str] = None
+    days: int = 0
+    direction: Optional[Literal["in", "out"]] = None
+    amount: float = 0
+    lead_days: int = 0
+
+class RepaymentSpec(BaseModel):
+    lead_days: int
+    amount: float
+
+class Lever(BaseModel):
+    id: str
+    name: str
+    effects: list[Effect]
+    cost_usd: float
+    cost_basis: str = ""
+    constraint: str = ""
+    deadline: Optional[str] = None
+    exclusive_group: Optional[str] = None
+    last_resort: bool = False
+    action_type: str = ""
+    repayments: list[RepaymentSpec] = []
+
+class PlanRepayment(BaseModel):
+    date: str
+    amount: float
+    lever: str
+
+class Deferred(BaseModel):
+    txn_id: str
+    lever: str
+    original_date: str
+    new_date: str
+    amount: float
+
+class Plan(BaseModel):
+    decision_date: str
+    feasible: bool
+    best_effort: bool
+    levers: list[str]
+    total_cost: float
+    forecast: ForecastResult
+    repayments: list[PlanRepayment]
+    deferred_obligations: list[Deferred]
+    deferred_total: float
+    note: str = ""
+
+class WaitPoint(BaseModel):
+    decision_date: str
+    feasible: bool
+    total_cost: Optional[float]
+    levers: list[str]
+    min_balance: float

@@ -12,3 +12,9 @@ def load_dataset(path=DATA):
                 status=t["status"],
                 flexibility=t.get("flexibility", "fixed"), note=t.get("note", "")) for t in raw["transactions"]]
     return raw, txns
+
+from .models import Lever
+LEVERS = Path(__file__).resolve().parents[2] / "data" / "levers.json"
+
+def load_levers(path=LEVERS):
+    return [Lever(**l) for l in json.loads(Path(path).read_text())["levers"]]
