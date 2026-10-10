@@ -1,1 +1,0 @@
-"""CashPilot app package."""

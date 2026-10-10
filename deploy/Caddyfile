@@ -1,8 +1,9 @@
-# Caddyfile for HTTPS reverse proxy
-cashpilot.localhost {
-    reverse_proxy cashpilot-api:8000
-}
-
-cashpilot-ui.localhost {
-    reverse_proxy cashpilot-ui:8501
+# DOMAIN comes from deploy/.env, e.g. 172-105-12-34.sslip.io (works with no domain purchase).
+{$DOMAIN} {
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy ui:8501
+	}
 }

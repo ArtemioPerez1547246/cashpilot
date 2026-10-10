@@ -1,115 +1,154 @@
-from __future__ import annotations
+"""CashPilot API. Thin routes over the engine, agent, action queue and monitor."""
+import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app.engine.forecast import (
-    cost_of_waiting,
-    forecast_cash_flow,
-    investigate,
-    load_transactions,
-    optimize_plan,
-)
+from . import monitor
+from .actions import clear as clear_actions, get_action, list_actions, set_status
+from .agent import agent as agent_mod, investigate
+from .engine import scenarios as S
 
-app = FastAPI(title="CashPilot", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_app):
+    if os.getenv("DISABLE_MONITOR_TIMER") != "1":
+        monitor.start_timer()
+    yield
+
+
+app = FastAPI(title="CashPilot API", version="1.0.0", lifespan=lifespan)
+
+
+@app.exception_handler(KeyError)
+async def _key_error(_, exc):
+    return JSONResponse(status_code=404, content={"error": "not_found", "detail": str(exc).strip("'")})
+
+
+@app.exception_handler(ValueError)
+async def _value_error(_, exc):
+    return JSONResponse(status_code=400, content={"error": "bad_request", "detail": str(exc)})
 
 
 class SimulateRequest(BaseModel):
-    scenario: str = Field(...)
+    scenario: str = "live"
     lever_ids: list[str] = Field(default_factory=list)
+    decision_date: str = S.START
     extra_changes: list[dict] = Field(default_factory=list)
 
 
 class OptimizeRequest(BaseModel):
-    scenario: str = Field(...)
-    decision_date: str = Field(...)
+    scenario: str = "live"
+    decision_date: str = S.START
 
 
 class InvestigateRequest(BaseModel):
-    scenario: str = Field(...)
-    question: str = Field(...)
+    scenario: str = "live"
+    question: str = "Will we run short of cash this week? Explain why and what to do."
 
 
 class EventRequest(BaseModel):
-    type: str = Field(...)
-    txn: str | None = None
-    days: int | None = None
+    type: str = "payment_delayed"
+    txn: str
+    days: int = 0
 
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "model_provider": "stub", "version": "0.1.0"}
+    return {"ok": True, "model_provider": agent_mod.provider(), "version": app.version}
+
+
+@app.get("/api/scenarios")
+def scenarios():
+    return [{"id": k, "label": v["label"], "changes": v["changes"]} for k, v in S.SCENARIOS.items()]
+
+
+@app.get("/api/levers")
+def levers():
+    return [lv.model_dump() for lv in S.LEVERS]
+
+
+@app.get("/api/transactions")
+def transactions(scenario: str = "live"):
+    return [t.model_dump() for t in S.transactions(scenario)]
 
 
 @app.get("/api/overview")
-def overview(scenario: str = "A_normal"):
-    settings = {
-        "business": "Paletería demo",
-        "today": "2026-10-12",
-        "start_date": "2026-10-12",
-        "horizon_days": 14,
-        "min_reserve": 1500,
-        "opening_cash": 8000,
-    }
-    return {
-        "business": settings["business"],
-        "today": settings["today"],
-        "settings": settings,
-        "transactions": load_transactions(),
-        "forecast": forecast_cash_flow(scenario),
-    }
+def overview(scenario: str = "live"):
+    f = S.forecast(scenario)
+    txns = sorted(S.transactions(scenario), key=lambda t: (t.date, t.id))
+    return {"settings": S.settings(), "scenario": scenario, "forecast": f.model_dump(),
+            "upcoming_obligations": [t.model_dump() for t in txns if t.direction == "out"]}
 
 
 @app.get("/api/forecast")
-def forecast(scenario: str = "A_normal", decision_date: str | None = None):
-    return forecast_cash_flow(scenario, [], decision_date or "2026-10-12")
+def forecast(scenario: str = "live"):
+    return S.forecast(scenario).model_dump()
 
 
 @app.post("/api/simulate")
-def simulate(payload: SimulateRequest):
-    return forecast_cash_flow(payload.scenario, payload.lever_ids, extra_changes=payload.extra_changes)
+def simulate(req: SimulateRequest):
+    return S.forecast(req.scenario, req.lever_ids, req.decision_date, req.extra_changes).model_dump()
 
 
 @app.post("/api/optimize")
-def optimize(payload: OptimizeRequest):
-    return optimize_plan(payload.scenario, payload.decision_date)
+def optimize(req: OptimizeRequest):
+    return S.optimize(req.scenario, req.decision_date).model_dump()
 
 
 @app.get("/api/cost-of-waiting")
-def cost_waiting_route(scenario: str = "A_normal"):
-    return cost_of_waiting(scenario)
+def cost_of_waiting(scenario: str = "live"):
+    return [p.model_dump() for p in S.cost_of_waiting(scenario)]
+
+
+@app.get("/api/drivers")
+def drivers(scenario: str = "live"):
+    return S.drivers(scenario).model_dump()
 
 
 @app.post("/api/investigate")
-def investigate_endpoint(payload: InvestigateRequest):
-    return investigate(payload.scenario, payload.question)
+def investigate_route(req: InvestigateRequest):
+    return investigate(req.scenario, req.question)
 
 
 @app.post("/api/events")
-def events(payload: EventRequest):
-    return {"alert_id": f"alert-{payload.type}-{payload.txn or 'none'}", "status": "created"}
+def events(req: EventRequest):
+    alert = monitor.handle_event(req.type, req.txn, req.days)
+    return {"alert": alert, "forecast": S.forecast("live").model_dump()}
 
 
 @app.get("/api/alerts")
 def alerts():
-    return {"alerts": []}
+    return monitor.get_alerts()
 
 
 @app.get("/api/actions")
 def actions():
-    return {"actions": []}
+    return [a.model_dump() for a in list_actions()]
+
+
+def _decide(action_id, status):
+    a = set_status(action_id, status)
+    if a is None:
+        raise HTTPException(404, detail=f"action {action_id} not found")
+    return a.model_dump()
 
 
 @app.post("/api/actions/{action_id}/approve")
 def approve(action_id: str):
-    return {"id": action_id, "status": "approved"}
+    return _decide(action_id, "approved")
 
 
 @app.post("/api/actions/{action_id}/reject")
 def reject(action_id: str):
-    return {"id": action_id, "status": "rejected"}
+    return _decide(action_id, "rejected")
 
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(_, exc: HTTPException):
-    return {"error": exc.detail, "detail": exc.detail}
+@app.post("/api/demo/reset")
+def demo_reset():
+    """Back to a clean normal week: no live events, no alerts, empty action queue."""
+    S.reset_live()
+    monitor.reset()
+    clear_actions()
+    return {"ok": True}
