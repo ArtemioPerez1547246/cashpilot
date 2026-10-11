@@ -303,12 +303,12 @@ if view != "CashPilot":
     for f in items:
         with st.container(border=True):
             badge = "🟢 open" if f["status"] == "open" else "✅ done"
-            st.write(f"**{f['id']} · {f['title']}** · {f['account']} · {badge}")
+            st.write(f"**{f['id']} · " + f['title'].replace('$', r'\$') + f"** · {f['account']} · {badge}")
             st.caption(f"Owner: {f['owner']} · Due: {f['due_date']} · Requested by {f['requested_by']} "
                        f"· created {f['created_at'][:16].replace('T', ' ')} UTC"
                        + (f" · repeat runs blocked: {f['repeat_attempts']}" if f["repeat_attempts"] else ""))
             if f["details"]:
-                st.write(f["details"])
+                st.write(f["details"].replace("$", r"\$"))
             for s_ in f["sources"]:
                 loc = " · ".join(x for x in [s_["lines"] and f"lines {s_['lines']}",
                                              s_["sha256"] and f"sha256 {s_['sha256'][:12]}…"] if x)
