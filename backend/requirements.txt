@@ -7,3 +7,4 @@ strands-agents[openai]>=1.0
 streamlit>=1.38
 plotly>=5.22
 requests>=2.32
+mcp>=1.30.0,<2
