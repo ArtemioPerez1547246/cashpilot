@@ -37,7 +37,7 @@ TEAL, LIME, INK, MUTED = "#0B5D57", "#C8EF5A", "#10201E", "#3D5753"
 RED, AMBER, GREEN, BG, LINE = "#A3231A", "#C27C00", "#0B5D57", "#F2F6F5", "#98ADA9"
 FONT = "Manrope, sans-serif"
 
-st.set_page_config(page_title="ForeCash", page_icon="🍦", layout="wide",
+st.set_page_config(page_title="ForeCash", page_icon=os.path.join(os.path.dirname(os.path.abspath(__file__)), "forecash-icon.png"), layout="wide",
                    initial_sidebar_state="collapsed")
 
 st.markdown(f"""
