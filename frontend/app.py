@@ -357,7 +357,7 @@ def view_expenses_dialog():
 def top_bar():
     with st.container(key="topbar"):
         c0, c1, c2, c3 = st.columns([0.5, 4.5, 3.8, 1.4], vertical_alignment="center")
-        c0.markdown("🍦")
+        c0.button("☰", key="menubtn", help="Menu", on_click=toggle_menu)
         c1.markdown("CashPilot")
         moved = any(t["id"] == "T08" and t["date"][:10] != "2026-10-15" for t in get("/api/transactions"))
         if c2.button("Simulate: Ridgeline pays 6 days late", type="primary", width="stretch", disabled=moved,
@@ -381,7 +381,6 @@ def top_bar():
                           width="stretch", on_click=toggle_submenu, args=("new",))
                 if sub == "new":
                     with st.container(key="sub-new"):
-                        st.button("New accounts receivable", key="m-new-ar", width="stretch")   # button only
                         if st.button("New expense", key="m-new-exp", width="stretch"):
                             open_dialog("new_expense")
                 # View
@@ -389,7 +388,6 @@ def top_bar():
                           width="stretch", on_click=toggle_submenu, args=("view",))
                 if sub == "view":
                     with st.container(key="sub-view"):
-                        st.button("Existing accounts receivable", key="m-view-ar", width="stretch")   # button only
                         if st.button("Existing expense", key="m-view-exp", width="stretch"):
                             open_dialog("view_expenses")
 
@@ -418,6 +416,47 @@ ov = cget("/api/overview", ver, scenario=SCENARIO)
 s, f = ov["settings"], ov["forecast"]
 days = f["days"]
 reserve = s["min_reserve"]
+
+# ---------- view switch: CashPilot vs. DevRev follow-up board ----------
+view = st.radio("View", ["CashPilot", "Enterprise follow-ups (DevRev)"], horizontal=True, label_visibility="collapsed")
+
+if view != "CashPilot":
+    st.title("Enterprise follow-ups (DevRev)")
+    st.caption("Created by DevRev Computer through our MCP connector, after the user approved each preview. "
+               "Evidence: synthetic call transcripts written for this demo (DevRev confirmed teams may load their own data). "
+               "Open follow-ups about incoming payments also appear on the CashPilot page.")
+    if st.button("Refresh"):
+        st.rerun()
+    acct = st.text_input("Filter by account", "")
+    data = get("/api/devrev/follow-ups", account=acct)
+    items = data["follow_ups"]
+    m = st.columns(3)
+    m[0].metric("Follow-ups", data["total"])
+    m[1].metric("Open", sum(1 for f in items if f["status"] == "open"))
+    m[2].metric("Duplicates blocked", sum(f["repeat_attempts"] for f in items))
+    if not items:
+        st.info("No follow-ups yet. In DevRev Computer, ask the commitment-to-action skill to review an account.")
+    for f in items:
+        with st.container(border=True):
+            badge = "🟢 open" if f["status"] == "open" else "✅ done"
+            st.write(f"**{f['id']} · " + f['title'].replace('$', r'\$') + f"** · {f['account']} · {badge}")
+            st.caption(f"Owner: {f['owner']} · Due: {f['due_date']} · Requested via DevRev Computer "
+                       f"· created {f['created_at'][:16].replace('T', ' ')} UTC"
+                       + (f" · repeat runs blocked: {f['repeat_attempts']}" if f["repeat_attempts"] else ""))
+            if f["details"]:
+                st.write(f["details"].replace("$", r"\$"))
+            for s_ in f["sources"]:
+                loc = " · ".join(x for x in [s_["lines"] and f"lines {s_['lines']}",
+                                             s_["sha256"] and f"sha256 {s_['sha256'][:12]}…"] if x)
+                st.caption(f"📎 Source: `{s_['ref']}`" + (f" ({loc})" if loc else "")
+                           + (f" — “{s_['quote']}”" if s_["quote"] else ""))
+            if f["status"] == "open" and st.button("Mark done", key=f"done-{f['id']}"):
+                post(f"/api/devrev/follow-ups/{f['id']}/status?status=done")
+                st.rerun()
+            if f["status"] == "done" and st.button("Reopen", key=f"reopen-{f['id']}"):
+                post(f"/api/devrev/follow-ups/{f['id']}/status?status=open")
+                st.rerun()
+    st.stop()
 
 # ---------- header ----------
 h1, h2 = st.columns([3, 2], vertical_alignment="bottom")
@@ -587,6 +626,34 @@ def forecast_section(ver, f, reserve):
 
 
 forecast_section(ver, f, reserve)
+
+# ---------- DevRev: what customers said about money you're expecting ----------
+def devrev_commitments_panel():
+    """Open DevRev follow-ups whose account appears in an incoming payment. Read-only."""
+    import os
+    try:
+        items = get("/api/devrev/follow-ups", status="open")["follow_ups"]
+        incoming = [t for t in get("/api/transactions") if t["direction"] == "in"]
+    except Exception:
+        return
+    hits = [(t, f) for t in incoming for f in items
+            if f["account"].lower() in t["description"].lower() and t["date"][:10] == f["due_date"][:10]]
+    if not hits:
+        return
+    esc = lambda x: str(x).replace("$", r"\$")
+    with st.container(border=True):
+        st.markdown("**🔎 Why this payment moved: what the customer told you (from DevRev)**")
+        for t, f in hits:
+            st.markdown(f"**{t['id']}** {esc(t['description'])}  \n"
+                        f"→ **{f['id']} · {esc(f['title'])}** · due {f['due_date']} · owner {f['owner']}")
+            for s_ in f["sources"]:
+                st.caption(f"📎 `{s_['ref']}`" + (f" lines {s_['lines']}" if s_["lines"] else "")
+                           + (f" — “{esc(s_['quote'])}”" if s_["quote"] else ""))
+        st.caption("Found in call transcripts by DevRev Computer and approved by the owner. Read-only here.")
+        st.link_button("Open DevRev Computer", os.getenv("DEVREV_URL", "https://app.devrev.ai"))
+
+
+devrev_commitments_panel()
 
 # ---------- AI analyst (left) + approvals and plan details (right) ----------
 c_ai, c_ok = st.columns(2, gap="medium")
