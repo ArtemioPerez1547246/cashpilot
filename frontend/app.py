@@ -500,7 +500,7 @@ def top_bar():
             post("/api/events", {"type": "payment_delayed", "txn": "T08", "days": 6})
             st.session_state.data_ver += 1
             st.session_state.menu_open = False
-            st.toast("Event sent. ForeCash is investigating.")
+            st.session_state.ridgeline_text = True     # show the customer's text message
             st.rerun()                               # numbers changed: refresh the whole page
         if c3.button("Reset demo", width="stretch"):
             post("/api/demo/reset")
@@ -569,6 +569,35 @@ elif dlg == "fix":
 msg = st.session_state.pop("toast_msg", None)
 if msg:
     st.toast(msg)
+
+# ---------- the late-payment "text message" from Ridgeline (slides in top right, fades out) ----------
+RIDGELINE_TEXT = """
+<style>
+@keyframes cp-sms { 0% {transform: translateX(120%); opacity: 0}
+                    6% {transform: translateX(0); opacity: 1}
+                    88% {transform: translateX(0); opacity: 1}
+                    100% {transform: translateX(120%); opacity: 0; visibility: hidden} }
+.cp-sms { position: fixed; top: 70px; right: 18px; z-index: 999999; width: 340px; max-width: calc(100vw - 36px);
+          background: rgba(250,250,252,.97); border-radius: 18px; padding: 12px 14px 14px;
+          box-shadow: 0 12px 32px rgba(0,0,0,.22); font-family: -apple-system, "SF Pro Text", Manrope, sans-serif;
+          animation: cp-sms 12s ease-in-out forwards; pointer-events: none; }
+.cp-sms-top { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7280; margin-bottom: 8px; }
+.cp-sms-app { width: 20px; height: 20px; border-radius: 5px; background: #34C759; color: #fff;
+              display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cp-sms-from { font-weight: 700; font-size: 14px; color: #111; margin: 0 0 6px; }
+.cp-sms-bubble { background: #E9E9EB; color: #111; border-radius: 18px 18px 18px 4px; padding: 9px 12px;
+                 font-size: 14px; line-height: 1.35; }
+</style>
+<div class="cp-sms">
+  <div class="cp-sms-top"><span class="cp-sms-app">��</span><span>MESSAGES</span><span style="margin-left:auto">now</span></div>
+  <div class="cp-sms-from">Luis Pardo · Ridgeline Corp</div>
+  <div class="cp-sms-bubble">Hi Marisol, I’m really sorry. Our payment run moved because of the quarter close,
+  so invoice INV-2041 for &#36;4,000 will go out on Oct 21 instead of Oct 15. That’s 6 days late.
+  Apologies for the trouble, and thank you for understanding. – Luis</div>
+</div>
+"""
+if st.session_state.pop("ridgeline_text", False):
+    html(RIDGELINE_TEXT)
 
 # alerts are fetched fresh every time; they decide when cached data must refresh
 alerts = get("/api/alerts")
