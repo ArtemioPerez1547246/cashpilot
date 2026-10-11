@@ -4,6 +4,7 @@ this file only formats numbers, it never calculates them.
 
 Run (from frontend/, venv active):  streamlit run app.py
 """
+import base64
 import os
 import time
 from datetime import date
@@ -11,6 +12,13 @@ from datetime import date
 import plotly.graph_objects as go
 import requests
 import streamlit as st
+
+ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "forecash-icon.png")
+try:                                   # the cloud icon, embedded so it shows inside the top bar
+    with open(ICON_PATH, "rb") as fh:
+        ICON_B64 = base64.b64encode(fh.read()).decode()
+except OSError:
+    ICON_B64 = ""
 
 API = os.getenv("API_BASE", "http://localhost:8000")
 SCENARIO = "live"                      # the demo always runs on the live scenario
@@ -83,6 +91,7 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 .st-key-topbar .stMarkdown {{ margin: 0 !important; padding: 0 !important; }}
 
 /* brand name in the top bar (change "top" a pixel or two to nudge it up/down) */
+.cp-brand-icon {{ height: 40px; width: 40px; margin-left: 10px; vertical-align: middle; position: relative; top: -3px; }}
 .cp-brand {{ font-family: 'Bricolage Grotesque', 'Manrope', sans-serif; font-size: 30px; font-weight: 800;
   color: #fff; letter-spacing: -0.02em; white-space: nowrap;
   height: 44px; line-height: 44px; position: relative; top: -2px; }}
@@ -522,7 +531,9 @@ def top_bar():
     with st.container(key="topbar"):
         c0, c1, c2, c3 = st.columns([0.5, 4.5, 3.8, 1.4], vertical_alignment="center")
         c0.button("☰", key="menubtn", help="Menu", on_click=toggle_menu)
-        c1.markdown("<div class='cp-brand'>ForeCash</div>", unsafe_allow_html=True)
+        c1.markdown("<div class='cp-brand'>ForeCash" + (f"<img class='cp-brand-icon' alt='' "
+                    f"src='data:image/png;base64,{ICON_B64}'>" if ICON_B64 else "") + "</div>",
+                    unsafe_allow_html=True)
         moved = any(t["id"] == "T08" and t["date"][:10] != "2026-10-15" for t in get("/api/transactions"))
         if c2.button("Simulate: Ridgeline pays 6 days late", type="primary", width="stretch", disabled=moved,
                      help="Already applied. Press Reset demo to run it again." if moved else None):
