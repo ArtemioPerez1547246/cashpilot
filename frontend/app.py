@@ -724,9 +724,8 @@ low_color = RED if f["min_balance"] < reserve else INK
 html(f"""<div class='cp-kpis'>
 <div><div class='cp-label'>Cash today</div><div class='cp-value' style='color:{RED if s['opening_cash'] < 0 else INK}'>{money(s['opening_cash'])}</div></div>
 <div><div class='cp-label'>Lowest balance</div>
- <div class='cp-value' style='color:{low_color}'>{money(f['min_balance'])}
- <span style='font-size:15px;font-weight:600'>{day_long(f['min_date'])}</span></div>
- <div class='cp-note'>We judge safety by your worst day, not your last day.</div></div>
+ <div class='cp-value' style='color:{low_color}'>{money(f['min_balance'])}</div>
+ <div class='cp-note' style='font-size:15px;font-weight:600'>{day_long(f['min_date'])}</div></div>
 <div><div class='cp-label'>Ending cash</div><div class='cp-value' style='color:{RED if f['ending_cash'] < 0 else INK}'>{money(f['ending_cash'])}</div></div>
 <div><div class='cp-label'>Below reserve by</div>
  <div class='cp-value' style='color:{RED if bad else GREEN}'>{money(f['shortfall_vs_reserve'])}</div></div>
