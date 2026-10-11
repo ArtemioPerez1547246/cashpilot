@@ -732,17 +732,22 @@ def forecast_section(ver, f, reserve):
         with c_bal:
             chart(fig)
         with c_flow:      # where the money comes from and goes, day by day (engine numbers, no math here)
-            st.markdown("**Money in vs. money out**")
+            st.markdown("**Revenue vs. expenses**")
             txns = cget("/api/transactions", ver, scenario=SCENARIO)
             by_day = {}
             for t in sorted(txns, key=lambda t: -t["amount"]):
                 by_day.setdefault((t["date"][:10], t["direction"]), []).append(
                     f"{clean(t['description'])}: {money(t['amount'])}")
-            dates = [d["date"][:10] for d in days]
             flow = go.Figure()
-            for direction, label, key, color in (("in", "Money in", "inflows", GREEN), ("out", "Money out", "outflows", RED)):
-                flow.add_bar(x=x, y=[d[key] for d in days], name=label, marker_color=color,
-                             customdata=["<br>".join(by_day.get((dt, direction), ["nothing scheduled"])) for dt in dates],
+            for direction, label, key, color in (("in", "Revenue", "inflows", GREEN), ("out", "Expenses", "outflows", RED)):
+                tips = []
+                for d in days:
+                    items = by_day.get((d["date"][:10], direction), [])
+                    tip = "<br>".join(items) if items else "nothing scheduled"
+                    if len(items) > 1:          # the day's total comes from the engine, not added up here
+                        tip += f"<br><b>Total: {money(d[key])}</b>"
+                    tips.append(tip)
+                flow.add_bar(x=x, y=[d[key] for d in days], name=label, marker_color=color, customdata=tips,
                              hovertemplate=f"<b>{label}, %{{x}}</b><br>%{{customdata}}<extra></extra>")
             flow.update_layout(barmode="group", height=372, margin=dict(l=20, r=20, t=10, b=20), plot_bgcolor="#fff",
                                paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=13, color=INK),
@@ -751,14 +756,6 @@ def forecast_section(ver, f, reserve):
                                yaxis=dict(tickprefix="$", tickformat=",", gridcolor="#EEF2F1", automargin=True),
                                xaxis=dict(automargin=True, tickfont=dict(size=13)))
             chart(flow)
-            if f.get("total_inflows") is not None:      # weekly totals come from the engine
-                html(f"<div style='display:flex;gap:24px;flex-wrap:wrap;margin:-6px 0 0 6px'>"
-                     f"<div><div class='cp-note'>Money in this week</div>"
-                     f"<div style='font-weight:800;font-size:20px;color:{GREEN}'>{money(f['total_inflows'])}</div></div>"
-                     f"<div><div class='cp-note'>Money out this week</div>"
-                     f"<div style='font-weight:800;font-size:20px;color:{RED}'>{money(f['total_outflows'])}</div></div>"
-                     f"<div><div class='cp-note'>Difference</div>"
-                     f"<div style='font-weight:800;font-size:20px;color:{INK}'>{signed(f['net_change'])}</div></div></div>")
 
     # ----- cheapest plan (boxed card on a green week) -----
     with c_plan:
