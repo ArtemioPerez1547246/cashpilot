@@ -104,8 +104,13 @@ class BearerGate:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
-            supplied = dict(scope.get("headers", [])).get(b"authorization", b"")
-            if not hmac.compare_digest(supplied, b"Bearer " + TOKEN):
+            supplied = dict(scope.get("headers", [])).get(b"authorization", b"").strip()
+            parts = supplied.split(None, 1)          # accept "Bearer <token>" or the raw token (DevRev PAT style)
+            token = parts[1] if len(parts) == 2 and parts[0].lower() in (b"bearer", b"token") else supplied
+            if not hmac.compare_digest(token, TOKEN):
+                scheme = parts[0][:10].decode(errors="replace") if len(parts) == 2 else ("raw" if supplied else "none")
+                print(f"[board] 401: auth scheme={scheme!r} header length={len(supplied)}, "
+                      f"expected token length={len(TOKEN)}", flush=True)
                 await send({"type": "http.response.start", "status": 401,
                             "headers": [(b"content-type", b"application/json"), (b"www-authenticate", b"Bearer")]})
                 await send({"type": "http.response.body", "body": b'{"error":"unauthorized"}'})
