@@ -112,7 +112,7 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 [class*="st-key-yesdel"] button p {{ color: #fff !important; }}
 
 /* "Try a fix" dropdown button looks like an input box */
-.st-key-fixbox [data-testid="stPopover"] > div > button, .st-key-fixbox [data-testid="stPopoverButton"] {{
+.st-key-fixbox button, .st-key-fixbox [data-testid="stPopover"] > div > button, .st-key-fixbox [data-testid="stPopoverButton"] {{
   background: #fff !important; border: 1px solid {LINE} !important;
   color: {INK} !important; justify-content: space-between; min-height: 44px; }}
 
@@ -205,6 +205,7 @@ def clean(s):        # repair "PaleterÃa"-style garbled text and swap in the di
         pass
     for old in OLD_NAMES:
         s = s.replace(old, BUSINESS)
+    s = s.replace("Card settlement", "Revenue")
     return s
 
 
@@ -377,7 +378,7 @@ def view_expenses_dialog():
     exps = st.session_state.expenses
     cols = [3, 1.5, 2, 0.45, 0.45]
     if not exps:
-        st.caption("No expenses yet. Add one from ☰ → New → New expense.")
+        st.caption("No expenses yet. Add one from ☰ → New → Expense.")
     else:
         h1, h2, h3, _, _ = st.columns(cols)
         h1.markdown("<div class='cp-colhead'>Name</div>", unsafe_allow_html=True)
@@ -416,7 +417,7 @@ def _api_error(e):
         return str(e)
 
 
-@st.dialog("Late Receivable", width="large")
+@st.dialog("Delayed Receivable", width="large")
 def new_promise_dialog():
     """The owner heard it in person or on the phone: preview the impact, approve, and the forecast,
     alert and DevRev follow-up update together. All math happens in the backend."""
@@ -485,7 +486,7 @@ def view_promises_dialog():
         st.error(_api_error(e))
         return
     if not items:
-        st.caption("Nothing tracked yet. Record one from ☰ → New → Late Receivable.")
+        st.caption("Nothing tracked yet. Record one from ☰ → New → Delayed Receivable.")
     for f_ in items:
         with st.container(border=True):
             badge = "🟢 open" if f_["status"] == "open" else "✅ done"
@@ -513,7 +514,7 @@ def top_bar():
             post("/api/events", {"type": "payment_delayed", "txn": "T08", "days": 6})
             st.session_state.data_ver += 1
             st.session_state.menu_open = False
-            st.toast("Event sent. ForeCash is investigating.")
+            st.session_state.ridgeline_text = True     # show the customer's text message
             st.rerun()                               # numbers changed: refresh the whole page
         if c3.button("Reset demo", width="stretch"):
             post("/api/demo/reset")
@@ -529,9 +530,9 @@ def top_bar():
                           width="stretch", on_click=toggle_submenu, args=("new",))
                 if sub == "new":
                     with st.container(key="sub-new"):
-                        if st.button("New expense", key="m-new-exp", width="stretch"):
+                        if st.button("Expense", key="m-new-exp", width="stretch"):
                             open_dialog("new_expense")
-                        if st.button("Late Receivable", key="m-new-promise", width="stretch"):
+                        if st.button("Delayed Receivable", key="m-new-promise", width="stretch"):
                             open_dialog("new_promise")
                 # View
                 st.button(("▾ " if sub == "view" else "▸ ") + "View", key="m-view",
@@ -546,6 +547,24 @@ def top_bar():
 
 top_bar()
 
+# ---------- "Try a fix" pop-up: tick options, Apply closes the window ----------
+@st.dialog("Try a fix", width="large")
+def fix_dialog():
+    levers = get("/api/levers")
+    st.caption("Tick the options to test, then press Apply. Nothing is paid or sent; this only tests the plan.")
+    chosen = [lv["id"] for lv in levers
+              if st.checkbox(clean(lv["name"]), value=lv["id"] in st.session_state.applied_fixes, key=f"fx-{lv['id']}")]
+    b1, b2 = st.columns(2)
+    if b1.button("Apply changes", type="primary", width="stretch", key="fx-apply"):
+        st.session_state.applied_fixes = chosen
+        st.session_state.data_ver += 1
+        st.rerun()
+    if b2.button("Clear", width="stretch", key="fx-clear"):
+        st.session_state.applied_fixes = []
+        st.session_state.data_ver += 1
+        st.rerun()
+
+
 # open whichever pop-up the menu asked for (pop = it only opens once)
 dlg = st.session_state.pop("dialog", None)
 if dlg == "new_expense":
@@ -554,6 +573,8 @@ elif dlg == "view_expenses":
     view_expenses_dialog()
 elif dlg == "edit_expense":
     edit_expense_dialog(st.session_state.get("edit_idx"))
+elif dlg == "fix":
+    fix_dialog()
 elif dlg == "delete_expense":
     delete_expense_dialog(st.session_state.get("del_idx"))
 elif dlg == "new_promise":
@@ -564,6 +585,38 @@ elif dlg == "view_promises":
 msg = st.session_state.pop("toast_msg", None)
 if msg:
     st.toast(msg)
+
+# ---------- the late-payment "text message" from Ridgeline (slides in top right, fades out) ----------
+RIDGELINE_TEXT = """
+<style>
+@keyframes cp-sms { 0% {transform: translateX(120%); opacity: 0}
+                    6% {transform: translateX(0); opacity: 1}
+                    88% {transform: translateX(0); opacity: 1}
+                    100% {transform: translateX(120%); opacity: 0; visibility: hidden} }
+.cp-sms { position: fixed; top: 70px; right: 18px; z-index: 999999; width: 340px; max-width: calc(100vw - 36px);
+          background: rgba(250,250,252,.97); border-radius: 18px; padding: 12px 14px 14px;
+          box-shadow: 0 12px 32px rgba(0,0,0,.22); font-family: -apple-system, "SF Pro Text", Manrope, sans-serif;
+          animation: cp-sms 12s ease-in-out forwards; pointer-events: none; }
+.cp-sms-top { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7280; margin-bottom: 8px; }
+.cp-sms-app { width: 20px; height: 20px; border-radius: 5px; background: #34C759; color: #fff;
+              display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cp-sms-from { font-weight: 700; font-size: 14px; color: #111; margin: 0 0 6px; }
+.cp-sms-bubble { background: #E9E9EB; color: #111; border-radius: 18px 18px 18px 4px; padding: 9px 12px;
+                 font-size: 14px; line-height: 1.35; }
+</style>
+<div class="cp-sms">
+  <div class="cp-sms-top"><span class="cp-sms-app">💬</span><span>MESSAGES</span><span style="margin-left:auto">now</span></div>
+  <div class="cp-sms-from">Luis Pardo · Ridgeline Corp</div>
+  <div class="cp-sms-bubble">Hi Julian, I’m really sorry. Our payment run moved because of the quarter close,
+  so invoice INV-2041 for &#36;4,000 will go out on Oct 21 instead of Oct 15. That’s 6 days late.
+  Apologies for the trouble, and thank you for understanding. – Luis</div>
+</div>
+"""
+if st.session_state.pop("ridgeline_text", False):
+    st.session_state.ridgeline_until = time.time() + 12
+sms_slot = st.empty()        # always on the page (even when empty), so nothing below it shifts
+if time.time() < st.session_state.get("ridgeline_until", 0):
+    sms_slot.markdown(RIDGELINE_TEXT, unsafe_allow_html=True)
 
 # alerts are fetched fresh every time; they decide when cached data must refresh
 alerts = get("/api/alerts")
@@ -646,12 +699,12 @@ else:
 bad = f["shortfall_vs_reserve"] > 0
 low_color = RED if f["min_balance"] < reserve else INK
 html(f"""<div class='cp-kpis'>
-<div><div class='cp-label'>Cash today</div><div class='cp-value'>{money(s['opening_cash'])}</div></div>
+<div><div class='cp-label'>Cash today</div><div class='cp-value' style='color:{RED if s['opening_cash'] < 0 else INK}'>{money(s['opening_cash'])}</div></div>
 <div><div class='cp-label'>Lowest balance</div>
  <div class='cp-value' style='color:{low_color}'>{money(f['min_balance'])}
  <span style='font-size:15px;font-weight:600'>{day_long(f['min_date'])}</span></div>
  <div class='cp-note'>We judge safety by your worst day, not your last day.</div></div>
-<div><div class='cp-label'>Ending cash</div><div class='cp-value'>{money(f['ending_cash'])}</div></div>
+<div><div class='cp-label'>Ending cash</div><div class='cp-value' style='color:{RED if f['ending_cash'] < 0 else INK}'>{money(f['ending_cash'])}</div></div>
 <div><div class='cp-label'>Below reserve by</div>
  <div class='cp-value' style='color:{RED if bad else GREEN}'>{money(f['shortfall_vs_reserve'])}</div></div>
 </div>""")
@@ -686,14 +739,8 @@ def forecast_section(ver, f, reserve):
             label = (f"{len(picked)} option{'s' if len(picked) != 1 else ''} applied" if picked
                      else "Pick one or more options")
             with st.container(key="fixbox"):
-                with st.popover(label, width="stretch"):
-                    with st.form("fix-form", border=False):
-                        for lid, name in names.items():
-                            st.checkbox(name, key=f"lv-{lid}")
-                        b1, b2 = st.columns(2)
-                        b1.form_submit_button("Apply changes", type="primary", width="stretch",
-                                              on_click=apply_fixes, args=(list(names),))
-                        b2.form_submit_button("Clear", width="stretch", on_click=clear_fixes)
+                if st.button(label + "  ▾", width="stretch", key="fix-open"):
+                    open_dialog("fix")
             if picked:
                 st.caption("Testing: " + md(", ".join(names[lid] for lid in picked)))
             sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)}) if picked else None
@@ -895,7 +942,7 @@ else:
 
 with c_ok:
     st.markdown("### Ready for your approval")
-    acts = get("/api/actions")
+    acts = get("/api/actions") if bad else []    # drafts only matter while there's a cash problem
     if not acts:
         st.caption("Nothing to approve yet.")
     for a in acts:
