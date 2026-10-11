@@ -30,7 +30,7 @@ every dollar figure it writes is checked against the engine. Nothing is sent unt
 
 ```
 Owner hears "we'll pay on the 21st"          DevRev Computer + commitment-to-action skill
- (☰ New → Customer will pay later)            (finds the promise in a call transcript)
+ (☰ New → Late Receivable)                    (finds the promise in a call transcript)
             │                                              │  MCP over HTTPS (/mcp, Bearer token)
             ▼                                              ▼
    FastAPI backend on Akamai Linode ── follow-up board (SQLite, idempotent) ── evidence tools
