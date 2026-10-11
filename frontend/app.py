@@ -625,9 +625,7 @@ for d in days:
                  f"<div class='cp-note'>{word}{payroll_tag(d['date'])}</div></div>")
 html("<div style='font-weight:800;font-size:18px;margin:2px 0 6px'>7-day cash forecast</div>"
      f"<div style='display:grid;grid-template-columns:repeat({len(cards)},minmax(90px,1fr));gap:8px;"
-     f"overflow-x:auto;margin-bottom:6px'>{''.join(cards)}</div>"
-     f"<div class='cp-note' style='margin-bottom:14px'>☀️ more coming in than going out · ⛅ more going out · "
-     f"⛈️ below your {money(reserve)} reserve · 🌪️ below $0</div>")
+     f"overflow-x:auto;margin-bottom:14px'>{''.join(cards)}</div>")
 
 # ---------- chart + try a fix + plan + waiting (a fragment: picking an option only refreshes this part) ----------
 @st.fragment
