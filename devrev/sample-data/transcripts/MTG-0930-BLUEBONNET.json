@@ -1,0 +1,40 @@
+{
+  "synthetic": true,
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "meeting_id": "MTG-0930-BLUEBONNET",
+  "date": "2026-09-30",
+  "account": "Bluebonnet Elementary PTA",
+  "account_id": "ACC-BLUEBONNET",
+  "title": "Fall festival idea",
+  "attendees": [
+    "Marisol Vega (Paleteria El Sol, owner)",
+    "Karen Lee (Bluebonnet Elementary PTA)"
+  ],
+  "transcript": [
+    {
+      "t": "00:00",
+      "speaker": "Karen Lee",
+      "text": "We're thinking about a fall festival, nothing decided yet."
+    },
+    {
+      "t": "00:15",
+      "speaker": "Marisol Vega",
+      "text": "Happy to help if it happens. A cart for a few hours could work."
+    },
+    {
+      "t": "00:30",
+      "speaker": "Karen Lee",
+      "text": "Maybe in November. The board still has to vote on a budget."
+    },
+    {
+      "t": "00:45",
+      "speaker": "Marisol Vega",
+      "text": "Sure, reach out whenever you know more."
+    },
+    {
+      "t": "01:00",
+      "speaker": "Karen Lee",
+      "text": "Will do, it might be next year honestly."
+    }
+  ]
+}

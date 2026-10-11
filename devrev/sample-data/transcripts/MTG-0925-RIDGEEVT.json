@@ -1,0 +1,45 @@
+{
+  "synthetic": true,
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "meeting_id": "MTG-0925-RIDGEEVT",
+  "date": "2026-09-25",
+  "account": "Ridgeline Events LLC",
+  "account_id": "ACC-RIDGE-EVT",
+  "title": "Wedding dessert cart inquiry",
+  "attendees": [
+    "Marisol Vega (Paleteria El Sol, owner)",
+    "Priya Shah (Ridgeline Events LLC, planner)"
+  ],
+  "transcript": [
+    {
+      "t": "00:00",
+      "speaker": "Priya Shah",
+      "text": "We're a wedding planner, not the Ridgeline company downtown, people mix us up."
+    },
+    {
+      "t": "00:15",
+      "speaker": "Priya Shah",
+      "text": "We have a 150-guest wedding on November 14 and want a paleta cart."
+    },
+    {
+      "t": "00:32",
+      "speaker": "Marisol Vega",
+      "text": "That sounds fun. We will send you a quote by September 29."
+    },
+    {
+      "t": "00:45",
+      "speaker": "Priya Shah",
+      "text": "Great. The couple may want custom flavors, maybe hibiscus."
+    },
+    {
+      "t": "01:00",
+      "speaker": "Marisol Vega",
+      "text": "We can probably do that, let me check with my kitchen first."
+    },
+    {
+      "t": "01:15",
+      "speaker": "Priya Shah",
+      "text": "No rush on flavors. Quote first."
+    }
+  ]
+}

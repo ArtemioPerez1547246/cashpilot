@@ -1,0 +1,39 @@
+"""Evidence tools: approved folders only, cite hash + lines, honest when data is missing."""
+import json
+
+import pytest
+
+from app.devrev_board import vault
+
+
+@pytest.fixture
+def data(tmp_path, monkeypatch):
+    (tmp_path / "transcripts").mkdir()
+    (tmp_path / "transcripts" / "acme_qbr.json").write_text(json.dumps(
+        {"account": "Acme Corp", "lines": ["Hi all", "We will send the revised SOW by Friday"]}))
+    (tmp_path / "secret.txt").write_text("not approved")
+    monkeypatch.setenv("EB_DATA_DIR", str(tmp_path))
+    return tmp_path
+
+
+def test_missing_data_is_reported_not_guessed(monkeypatch, tmp_path):
+    monkeypatch.setenv("EB_DATA_DIR", str(tmp_path / "nope"))
+    with pytest.raises(ValueError, match="not mounted"):
+        vault.list_sources()
+
+
+def test_lists_only_approved_folders(data):
+    assert vault.list_sources()["sources"] == ["transcripts/acme_qbr.json"]
+
+
+def test_search_then_read_gives_citable_source(data):
+    hit = vault.search_evidence("revised sow")["matches"][0]
+    assert hit["path"] == "transcripts/acme_qbr.json" and len(hit["sha256"]) == 64
+    window = vault.read_evidence(hit["path"], start_line=max(1, hit["line"] - 2), max_lines=5)
+    assert "revised SOW" in window["text"] and window["sha256"] == hit["sha256"]
+
+
+def test_path_escape_and_unapproved_files_blocked(data):
+    for bad in ["../etc/passwd", "secret.txt", "transcripts/../secret.txt"]:
+        with pytest.raises(ValueError):
+            vault.read_evidence(bad)

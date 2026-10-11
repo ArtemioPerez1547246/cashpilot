@@ -1,0 +1,50 @@
+{
+  "synthetic": true,
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "meeting_id": "MTG-1002-SIERRA",
+  "date": "2026-10-02",
+  "account": "Sierra Dairy Co-op",
+  "account_id": "ACC-SIERRA",
+  "title": "Weekly order and terms",
+  "attendees": [
+    "Marisol Vega (Paleteria El Sol, owner)",
+    "Tom Reyes (Sierra Dairy Co-op, account rep)"
+  ],
+  "transcript": [
+    {
+      "t": "00:00",
+      "speaker": "Tom Reyes",
+      "text": "Your standing order for the 16th is milk, cream and condensed milk, about $2,100."
+    },
+    {
+      "t": "00:18",
+      "speaker": "Marisol Vega",
+      "text": "Yes. I'll confirm the exact quantities by October 7."
+    },
+    {
+      "t": "00:35",
+      "speaker": "Tom Reyes",
+      "text": "Sounds good. Payment is still due on delivery for that order."
+    },
+    {
+      "t": "00:50",
+      "speaker": "Marisol Vega",
+      "text": "Is there any chance of longer terms? Cash is tight mid-month."
+    },
+    {
+      "t": "01:05",
+      "speaker": "Tom Reyes",
+      "text": "We might be able to do net-7 for regulars. Put the request in writing and I'll take it to finance."
+    },
+    {
+      "t": "01:25",
+      "speaker": "Marisol Vega",
+      "text": "I'll email the net-7 request by October 9."
+    },
+    {
+      "t": "01:38",
+      "speaker": "Tom Reyes",
+      "text": "Perfect. No promises until finance signs off."
+    }
+  ]
+}

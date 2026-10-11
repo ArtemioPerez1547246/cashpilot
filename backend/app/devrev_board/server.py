@@ -11,7 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import BaseModel, Field
 
-from app.devrev_board import store
+from app.devrev_board import store, vault
 
 TOKEN = os.environ.get("MCP_TOKEN", "").encode("utf-8")
 if len(TOKEN) < 32:
@@ -19,7 +19,7 @@ if len(TOKEN) < 32:
 HOSTS = [h.strip() for h in os.getenv("MCP_ALLOWED_HOSTS", "localhost:*,127.0.0.1:*").split(",") if h.strip()]
 ORIGINS = [o.strip() for o in os.getenv("MCP_ALLOWED_ORIGINS", "").split(",") if o.strip()]
 
-mcp = FastMCP("CashPilot Follow-up Board", stateless_http=True, json_response=True,
+mcp = FastMCP("CashPilot Follow-up Board and Evidence", stateless_http=True, json_response=True,
               transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=True,
                                                            allowed_hosts=HOSTS, allowed_origins=ORIGINS))
 READ = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
@@ -36,6 +36,28 @@ class Source(BaseModel):
 def _fields(account, title, sources, details, owner, due_date, requested_by):
     return dict(account=account, title=title, sources=[s.model_dump() for s in sources], details=details,
                 owner=owner, due_date=due_date, requested_by=requested_by)
+
+
+@mcp.tool(annotations=READ)
+def list_sources(prefix: str = "", offset: int = 0, limit: int = 20) -> dict:
+    """List Enterprise-Bench export files (folders: transcripts/, crm_json_data/, pm_json_data/,
+    maple_kb/, internal_docs/). Filter with prefix, e.g. 'transcripts/'. Page with next_offset."""
+    return vault.list_sources(prefix, offset, limit)
+
+
+@mcp.tool(annotations=READ)
+def search_evidence(query: str, prefix: str = "", offset: int = 0, limit: int = 10) -> dict:
+    """Literal, case-insensitive substring search over the export (NOT semantic). One hit per file.
+    Use account names/IDs and promise phrases ("we will", "by Friday"); narrow with prefix.
+    Always read_evidence around a hit before treating it as a commitment."""
+    return vault.search_evidence(query, prefix, offset, limit)
+
+
+@mcp.tool(annotations=READ)
+def read_evidence(path: str, start_line: int = 1, max_lines: int = 60) -> dict:
+    """Read a bounded window of one export file. Cite path + sha256 + start_line-end_line as the
+    follow-up's source (ref = path, lines = 'start-end', sha256 = sha256)."""
+    return vault.read_evidence(path, start_line, max_lines)
 
 
 @mcp.tool(annotations=READ)

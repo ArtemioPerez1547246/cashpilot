@@ -1,0 +1,76 @@
+{
+  "synthetic": true,
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "meeting_id": "MTG-0928-RIDGE",
+  "date": "2026-09-28",
+  "account": "Ridgeline Corp",
+  "account_id": "ACC-RIDGE-CORP",
+  "title": "Company picnic catering: final details",
+  "attendees": [
+    "Marisol Vega (Paleteria El Sol, owner)",
+    "Dana Okafor (Ridgeline Corp, events)",
+    "Luis Pardo (Ridgeline Corp, accounts payable)"
+  ],
+  "transcript": [
+    {
+      "t": "00:00",
+      "speaker": "Marisol Vega",
+      "text": "Thanks for making time. Just confirming the details for the October 3 picnic."
+    },
+    {
+      "t": "00:20",
+      "speaker": "Dana Okafor",
+      "text": "Great. We have about 380 people now, so maybe plan for 400."
+    },
+    {
+      "t": "00:41",
+      "speaker": "Marisol Vega",
+      "text": "We will bring two paleta carts and 400 paletas, set up by 11 a.m. on October 3."
+    },
+    {
+      "t": "01:05",
+      "speaker": "Dana Okafor",
+      "text": "Perfect. Can you include the dairy-free options?"
+    },
+    {
+      "t": "01:12",
+      "speaker": "Marisol Vega",
+      "text": "Yes. I'll send you the allergen list by October 1 so your team can post it."
+    },
+    {
+      "t": "01:40",
+      "speaker": "Luis Pardo",
+      "text": "On billing: send the invoice to ap@ridgelinecorp.example after the event."
+    },
+    {
+      "t": "01:52",
+      "speaker": "Marisol Vega",
+      "text": "We'll send invoice INV-2041 for $4,000 on October 4, the day after the event."
+    },
+    {
+      "t": "02:10",
+      "speaker": "Luis Pardo",
+      "text": "Our terms are net-30, so payment will go out by October 15."
+    },
+    {
+      "t": "02:25",
+      "speaker": "Marisol Vega",
+      "text": "Thank you. Last year it came a little late, so that date really helps us."
+    },
+    {
+      "t": "02:38",
+      "speaker": "Luis Pardo",
+      "text": "Understood. October 15 is the date I have in the system."
+    },
+    {
+      "t": "02:55",
+      "speaker": "Dana Okafor",
+      "text": "We might want you back for the holiday party too, we can talk later."
+    },
+    {
+      "t": "03:10",
+      "speaker": "Marisol Vega",
+      "text": "We'd love that. Thanks, both."
+    }
+  ]
+}

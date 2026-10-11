@@ -4,13 +4,16 @@
 between the call and the task tracker, or get tracked twice, or get tracked without proof of what
 was actually promised.
 
-**Solution.** A DevRev Computer skill (`skills/commitment-to-action/SKILL.md`) finds explicit
+**Solution.** One MCP connector with two halves: read-only Enterprise-Bench evidence tools (adapted from DevRev's Evidence Vault starter) and an approval-gated follow-up board. A DevRev Computer skill (`skills/commitment-to-action/SKILL.md`) finds explicit
 commitments for any account in the Enterprise-Bench data, shows a preview with source evidence,
 and, only after the user approves, creates tracked tasks on the CashPilot follow-up board through
 our MCP connector. Re-running it never creates duplicates. Any teammate with their own connection
 can run it on any account.
 
-**Data boundary.** Business evidence comes only from Enterprise-Bench. The board stores only
+**Data.** DevRev's team confirmed we may load our own data for our use case. The evidence files in
+`devrev/sample-data/` are synthetic call transcripts and accounts written for this demo, consistent with
+CashPilot's Paleteria El Sol dataset (for example, Ridgeline Corp's INV-2041 for $4,000). Every file is
+marked `"synthetic": true`. The board stores only
 follow-ups derived from it, in its own database (`devrev_board.db`). It never reads or writes
 CashPilot's cash data, forecast, or action queue.
 
@@ -22,6 +25,9 @@ state volume → CashPilot dashboard, view "Enterprise follow-ups (DevRev)".
 ## Tools
 | Tool | What it does | Computer access mode |
 |---|---|---|
+| `list_sources(prefix, offset, limit)` | Enterprise-Bench export files (transcripts, CRM, PM, KB, internal docs) | Always allow |
+| `search_evidence(query, prefix, offset, limit)` | Literal search, one hit per file, with sha256 + line | Always allow |
+| `read_evidence(path, start_line, max_lines)` | Bounded read; cite path + sha256 + line range | Always allow |
 | `list_follow_ups(account, status, limit, offset)` | Existing tasks, paged | Always allow |
 | `get_follow_up(follow_up_id)` | One task; used to recover after a timeout | Always allow |
 | `preview_follow_up(account, title, sources[], details, owner, due_date, requested_by)` | Validates and returns exactly what would be created + `idempotency_key` + `duplicate_of`. Writes nothing | Always allow |

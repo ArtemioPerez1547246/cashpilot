@@ -28,8 +28,10 @@ services:
       - BOARD_PORT=8001
       - MCP_TOKEN=${MCP_TOKEN:-}  # if empty, only the board fails to start; the demo keeps running
       - MCP_ALLOWED_HOSTS=${DOMAIN},${DOMAIN}:*
+      - EB_DATA_DIR=/eb-data
     volumes:
       - state:/state
+      - ${EB_DATA_HOST:-../devrev/sample-data}:/eb-data:ro   # evidence files (synthetic transcripts), read-only
     restart: unless-stopped
 
   caddy:
