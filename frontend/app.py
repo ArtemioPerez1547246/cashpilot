@@ -791,15 +791,22 @@ def forecast_section(ver, f, reserve):
             flow = go.Figure()
             for direction, label, key, color in (("in", "Revenue", "inflows", GREEN),
                                                  ("out", "Expenses", "outflows", RED)):
-                flow.add_bar(x=x, y=[d[key] for d in days], name=label, marker_color=color,
-                             customdata=["<br>".join(by_day.get((dt, direction), ["nothing scheduled"])) for dt in dates],
+                tips = []
+                for d in days:
+                    items = by_day.get((d["date"][:10], direction), [])
+                    tip = "<br>".join(items) if items else "nothing scheduled"
+                    if len(items) > 1:          # the day's total comes from the engine, not added up here
+                        tip += f"<br><b>Total: {money(d[key])}</b>"
+                    tips.append(tip)
+                flow.add_bar(x=x, y=[d[key] for d in days], name=label, marker_color=color, customdata=tips,
                              hovertemplate=f"<b>{label}, %{{x}}</b><br>%{{customdata}}<extra></extra>")
             flow.update_layout(barmode="group", height=CHART_HEIGHT, margin=dict(l=20, r=20, t=64, b=20),
                                title=dict(text="<b>Revenue vs. expenses</b>", x=0.02, y=0.97,
                                           font=dict(family=FONT, size=16, color=INK)),
                                plot_bgcolor="#fff", paper_bgcolor="#fff",
                                font=dict(family=FONT, size=13, color=INK), hoverlabel=dict(font_family=FONT),
-                               legend=dict(orientation="h", x=0, y=1.07, font=dict(family=FONT, size=13)),
+                               legend=dict(orientation="h", x=0, y=1.07, font=dict(family=FONT, size=13),
+                                           itemclick="toggleothers", itemdoubleclick="toggle"),
                                bargap=0.25,
                                yaxis=dict(tickprefix="$", tickformat=",", gridcolor="#EEF2F1", automargin=True),
                                xaxis=dict(automargin=True, tickfont=dict(size=13)))
