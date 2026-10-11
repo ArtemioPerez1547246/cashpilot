@@ -1,13 +1,13 @@
 {
   "synthetic": true,
-  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paletería Arkansas, CashPilot).",
   "meeting_id": "MTG-0928-RIDGE",
   "date": "2026-09-28",
   "account": "Ridgeline Corp",
   "account_id": "ACC-RIDGE-CORP",
   "title": "Company picnic catering: final details",
   "attendees": [
-    "Marisol Vega (Paleteria El Sol, owner)",
+    "Marisol Vega (Paletería Arkansas, owner)",
     "Dana Okafor (Ridgeline Corp, events)",
     "Luis Pardo (Ridgeline Corp, accounts payable)"
   ],

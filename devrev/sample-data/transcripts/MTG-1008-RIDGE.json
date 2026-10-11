@@ -1,13 +1,13 @@
 {
   "synthetic": true,
-  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paletería Arkansas, CashPilot).",
   "meeting_id": "MTG-1008-RIDGE",
   "date": "2026-10-08",
   "account": "Ridgeline Corp",
   "account_id": "ACC-RIDGE-CORP",
   "title": "INV-2041 payment check-in",
   "attendees": [
-    "Marisol Vega (Paleteria El Sol, owner)",
+    "Marisol Vega (Paletería Arkansas, owner)",
     "Luis Pardo (Ridgeline Corp, accounts payable)"
   ],
   "transcript": [

@@ -1,13 +1,13 @@
 {
   "synthetic": true,
-  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paletería Arkansas, CashPilot).",
   "meeting_id": "MTG-1002-SIERRA",
   "date": "2026-10-02",
   "account": "Sierra Dairy Co-op",
   "account_id": "ACC-SIERRA",
   "title": "Weekly order and terms",
   "attendees": [
-    "Marisol Vega (Paleteria El Sol, owner)",
+    "Marisol Vega (Paletería Arkansas, owner)",
     "Tom Reyes (Sierra Dairy Co-op, account rep)"
   ],
   "transcript": [

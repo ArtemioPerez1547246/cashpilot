@@ -1,13 +1,13 @@
 {
   "synthetic": true,
-  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paletería Arkansas, CashPilot).",
   "meeting_id": "MTG-0930-BLUEBONNET",
   "date": "2026-09-30",
   "account": "Bluebonnet Elementary PTA",
   "account_id": "ACC-BLUEBONNET",
   "title": "Fall festival idea",
   "attendees": [
-    "Marisol Vega (Paleteria El Sol, owner)",
+    "Marisol Vega (Paletería Arkansas, owner)",
     "Karen Lee (Bluebonnet Elementary PTA)"
   ],
   "transcript": [

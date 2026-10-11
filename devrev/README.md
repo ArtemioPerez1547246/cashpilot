@@ -12,7 +12,7 @@ can run it on any account.
 
 **Data.** DevRev's team confirmed we may load our own data for our use case. The evidence files in
 `devrev/sample-data/` are synthetic call transcripts and accounts written for this demo, consistent with
-CashPilot's Paleteria El Sol dataset (for example, Ridgeline Corp's INV-2041 for $4,000). Every file is
+CashPilot's Paletería Arkansas demo data (for example, Ridgeline Corp's INV-2041 for $4,000). Every file is
 marked `"synthetic": true`. The board stores only
 follow-ups derived from it, in its own database (`devrev_board.db`). It never reads or writes
 CashPilot's cash data, forecast, or action queue.

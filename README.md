@@ -1,7 +1,7 @@
 # CashPilot
 
 Finds the cheapest way through a small business's cash crunch, and shows what it costs to wait.
-Hack Midwest 2026. Demo business: Paletería El Sol (synthetic data).
+Hack Midwest 2026. Demo business: Paletería Arkansas (synthetic data).
 
 ## Layout
 

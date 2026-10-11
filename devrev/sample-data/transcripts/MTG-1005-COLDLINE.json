@@ -1,13 +1,13 @@
 {
   "synthetic": true,
-  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paletería Arkansas, CashPilot).",
   "meeting_id": "MTG-1005-COLDLINE",
   "date": "2026-10-05",
   "account": "Coldline Freezers",
   "account_id": "ACC-COLDLINE",
   "title": "Dipping cabinet upgrade delivery",
   "attendees": [
-    "Marisol Vega (Paleteria El Sol, owner)",
+    "Marisol Vega (Paletería Arkansas, owner)",
     "Ana Ruiz (Coldline Freezers, sales)"
   ],
   "transcript": [
