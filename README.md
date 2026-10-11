@@ -46,3 +46,11 @@ cp deploy/.env.example deploy/.env   # fill in DOMAIN and model keys
 - Agents never do arithmetic. Every dollar figure comes from the engine; the verifier checks the memo.
 - Nothing executes automatically. The agent drafts; the owner approves.
 - Run `pytest` before every push. Never commit `.env`.
+
+## DevRev Computer (commitment-to-action connector)
+
+DevRev Computer finds explicit promises in call transcripts, shows a preview with the source file,
+line range and sha256, and only after the user approves creates a follow-up on our board (hosted on
+the same Akamai Linode at `/mcp`). Re-running never creates duplicates. Open follow-ups about
+incoming payments appear on the main CashPilot page next to the cash alert. Setup, the 7 tools,
+observed tests and known limits: [`devrev/README.md`](devrev/README.md).

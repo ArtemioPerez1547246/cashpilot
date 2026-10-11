@@ -228,3 +228,5 @@ backend/data/alerts.json
 .env
 .DS_Store
 *.zip
+.idea/
+backend/data/devrev_board.db
