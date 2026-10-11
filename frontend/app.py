@@ -297,7 +297,7 @@ def expense_fields(prefix, existing=None):
     return name.strip(), cost, when
 
 
-@st.dialog("New expense")
+@st.dialog("Expense")
 def new_expense_dialog():
     name, cost, when = expense_fields("new")
     left, _, right = st.columns([1, 1.2, 1])
@@ -403,7 +403,7 @@ def _api_error(e):
         return str(e)
 
 
-@st.dialog("Late Receivable", width="large")
+@st.dialog("Delayed Receivable", width="large")
 def new_promise_dialog():
     """The owner heard it in person or on the phone: preview the impact, approve, and the forecast,
     alert and DevRev follow-up update together. All math happens in the backend."""
