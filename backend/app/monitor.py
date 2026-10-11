@@ -28,6 +28,11 @@ def _investigate_into(alert):
     except Exception as exc:
         with _lock:
             alert.update(status="error", error=f"{type(exc).__name__}: {exc}")
+    with _lock:   # "Reset demo" happened while this ran: throw away the drafts it just made
+        stale = not any(a is alert for a in _alerts) and not _alerts
+    if stale:
+        from .actions import clear as clear_actions
+        clear_actions()
 
 
 def check(trigger, sync=False):

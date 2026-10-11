@@ -894,7 +894,7 @@ else:
 
 with c_ok:
     st.markdown("### Ready for your approval")
-    acts = get("/api/actions")
+    acts = get("/api/actions") if bad else []    # drafts only matter while there's a cash problem
     if not acts:
         st.caption("Nothing to approve yet.")
     for a in acts:
