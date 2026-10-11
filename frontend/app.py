@@ -21,6 +21,7 @@ PAYROLL_DATE = "2026-10-16"            # lowest point gets "(payroll day)" when 
 EVENT_LINE = "Ridgeline’s $4,000 payment is 6 days late."   # TODO: take the amount from the engine
 PROVIDERS = {"akamai": "Akamai", "bedrock": "AWS Bedrock", "openai": "OpenAI"}
 MEMO_LEFT = ("problem", "cause", "what happened", "why")   # memo sections kept on the left
+CHART_HEIGHT = 400                     # both top charts use this, so their bottoms line up
 
 # Dataset preview (front end only: saved in this browser session, does not change the forecast)
 PREVIEW_NOTE = "Preview only: saved for this session. It doesn’t change the forecast yet."
@@ -34,6 +35,7 @@ SAMPLE_EXPENSES = [
 # ---------- design 05 colors ----------
 TEAL, LIME, INK, MUTED = "#0B5D57", "#C8EF5A", "#10201E", "#3D5753"
 RED, AMBER, GREEN, BG, LINE = "#A3231A", "#C27C00", "#0B5D57", "#F2F6F5", "#98ADA9"
+FONT = "Manrope, sans-serif"
 
 st.set_page_config(page_title="ForeCash", page_icon="🍦", layout="wide",
                    initial_sidebar_state="collapsed")
@@ -71,14 +73,19 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
   background: {LIME}; color: {INK}; border: 0; font-weight: 600; }}
 .st-key-topbar button[kind="secondary"], .st-key-topbar [data-testid="stBaseButton-secondary"] {{
   background: transparent; color: #fff; border: 1px solid #7FB3AD; }}
-.st-key-menubtn button {{ font-size: 20px; padding: 0 12px; min-height: 40px; }}
+.st-key-menubtn button {{ font-size: 20px; padding: 0 12px; min-height: 44px; }}
+.st-key-topbar button {{ min-height: 44px; }}
 .st-key-topbar button p {{ font-size: 16px !important; font-weight: 600; }}
 .st-key-topbar button, .st-key-topbar button * {{ white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; }}
 .st-key-topbar [data-testid="stBaseButton-primary"] p, .st-key-topbar button[kind="primary"] p {{ color: {INK} !important; }}
+/* remove Streamlit's hidden spacing under text in the top bar, so the name centers with the buttons */
+.st-key-topbar [data-testid="stMarkdownContainer"], .st-key-topbar [data-testid="stMarkdown"],
+.st-key-topbar .stMarkdown {{ margin: 0 !important; padding: 0 !important; }}
 
-/* brand name in the top bar */
+/* brand name in the top bar (change "top" a pixel or two to nudge it up/down) */
 .cp-brand {{ font-family: 'Bricolage Grotesque', 'Manrope', sans-serif; font-size: 30px; font-weight: 800;
-  color: #fff; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }}
+  color: #fff; letter-spacing: -0.02em; white-space: nowrap;
+  height: 44px; line-height: 44px; position: relative; top: -2px; }}
 
 /* dropdown menu: hangs under the top bar, floats over the page, scrolls with it */
 .st-key-menu {{ position: absolute; top: calc(100% + 8px); left: 0; width: 290px; z-index: 1001;
@@ -92,13 +99,20 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 .st-key-sub-new, .st-key-sub-view {{ margin-left: 10px; padding-left: 10px; border-left: 2px solid #D5E2DF; }}
 .st-key-sub-new p, .st-key-sub-view p {{ font-weight: 600; font-size: 14px !important; }}
 
-/* delete buttons in the edit ticket: red */
-[class*="-delete"] button {{ color: {RED} !important; border: 1px solid {RED} !important; background: #fff !important; }}
-[class*="-yesdel"] button {{ color: #fff !important; background: {RED} !important; border: 0 !important; }}
-[class*="-yesdel"] button p, [class*="-delete"] button p {{ color: inherit !important; }}
+/* pencil + trash icons in the expense list: plain, shaded on hover */
+[class*="st-key-pen-"] button, [class*="st-key-bin-"] button {{
+  background: transparent !important; border: 0 !important; border-radius: 8px !important;
+  min-height: 40px; padding: 4px 10px !important; color: {MUTED} !important; }}
+[class*="st-key-pen-"] button:hover {{ background: #DDF2EC !important; color: {TEAL} !important; }}
+[class*="st-key-bin-"] button:hover {{ background: #FCE4E2 !important; color: {RED} !important; }}
+[class*="st-key-pen-"] button *, [class*="st-key-bin-"] button * {{ color: inherit !important; font-size: 22px !important; }}
+
+/* red "Yes, delete" button in the warning */
+[class*="st-key-yesdel"] button {{ color: #fff !important; background: {RED} !important; border: 0 !important; }}
+[class*="st-key-yesdel"] button p {{ color: #fff !important; }}
 
 /* "Try a fix" dropdown button looks like an input box */
-.st-key-fixbox button {{
+.st-key-fixbox [data-testid="stPopover"] > div > button, .st-key-fixbox [data-testid="stPopoverButton"] {{
   background: #fff !important; border: 1px solid {LINE} !important;
   color: {INK} !important; justify-content: space-between; min-height: 44px; }}
 
@@ -191,7 +205,6 @@ def clean(s):        # repair "PaleterÃa"-style garbled text and swap in the di
         pass
     for old in OLD_NAMES:
         s = s.replace(old, BUSINESS)
-    s = s.replace("Card settlement", "Revenue")
     return s
 
 
@@ -250,10 +263,6 @@ def open_dialog(name):
     st.rerun()
 
 
-def set_flag(key, value):
-    st.session_state[key] = value
-
-
 def apply_fixes(ids):
     st.session_state.applied_fixes = [lid for lid in ids if st.session_state.get(f"lv-{lid}")]
 
@@ -297,7 +306,7 @@ def expense_fields(prefix, existing=None):
     return name.strip(), cost, when
 
 
-@st.dialog("Expense")
+@st.dialog("New expense")
 def new_expense_dialog():
     name, cost, when = expense_fields("new")
     left, _, right = st.columns([1, 1.2, 1])
@@ -322,33 +331,11 @@ def edit_expense_dialog(idx):
     if idx is None or idx >= len(exps):
         st.caption("That expense no longer exists.")
         return
-    e = exps[idx]
     prefix = f"edit{idx}"
-    confirm_key = f"{prefix}-confirm"
-    name, cost, when = expense_fields(prefix, e)
-
-    # ----- "are you sure?" step -----
-    if st.session_state.get(confirm_key):
-        with st.container(border=True):
-            st.markdown(f"**Delete “{md(e['name'])}”?** Are you sure?")
-            st.caption("This removes the expense from the list.")
-            c_no, _, c_yes = st.columns([1, 1.2, 1])
-            c_no.button("Cancel", key=f"{prefix}-nodel", width="stretch",
-                        on_click=set_flag, args=(confirm_key, False))     # back to the ticket
-            if c_yes.button("Yes", key=f"{prefix}-yesdel", width="stretch"):
-                exps.pop(idx)
-                forget(prefix)
-                st.session_state.toast_msg = "Expense deleted."
-                st.session_state.dialog = "view_expenses"                # back to the list
-                st.rerun()
-        return
-
-    # ----- normal ticket buttons: Cancel + Delete on the left, Save on the right -----
-    c_cancel, c_delete, _, c_save = st.columns([1, 1, 0.3, 1.3])
-    cancel = c_cancel.button("Cancel", key=f"{prefix}-cancel", width="stretch")
-    c_delete.button("Delete", key=f"{prefix}-delete", width="stretch",
-                    on_click=set_flag, args=(confirm_key, True))
-    save = c_save.button("Save changes", key=f"{prefix}-save", type="primary", width="stretch")
+    name, cost, when = expense_fields(prefix, exps[idx])
+    left, _, right = st.columns([1, 1.2, 1])
+    cancel = left.button("Cancel", key=f"{prefix}-cancel", width="stretch")
+    save = right.button("Save changes", key=f"{prefix}-save", type="primary", width="stretch")
     if cancel:
         forget(prefix)
         st.session_state.dialog = "view_expenses"     # back to the list
@@ -364,25 +351,51 @@ def edit_expense_dialog(idx):
             st.rerun()
 
 
+@st.dialog("Delete expense?")
+def delete_expense_dialog(idx):
+    exps = st.session_state.expenses
+    if idx is None or idx >= len(exps):
+        st.caption("That expense no longer exists.")
+        return
+    e = exps[idx]
+    st.markdown(f"Are you sure you want to delete **{md(e['name'])}** "
+                f"({md(cents(e['cost']))}, {full_date(e['date'])})?")
+    st.caption("This removes the expense from the list.")
+    left, _, right = st.columns([1, 1.2, 1])
+    if left.button("Cancel", key="del-cancel", width="stretch"):
+        st.session_state.dialog = "view_expenses"     # back to the list
+        st.rerun()
+    if right.button("Yes, delete", key="yesdel-confirm", width="stretch"):
+        exps.pop(idx)
+        st.session_state.toast_msg = "Expense deleted."
+        st.session_state.dialog = "view_expenses"
+        st.rerun()
+
+
 @st.dialog("Existing expenses", width="large")
 def view_expenses_dialog():
     exps = st.session_state.expenses
+    cols = [3, 1.5, 2, 0.45, 0.45]
     if not exps:
         st.caption("No expenses yet. Add one from ☰ → New → New expense.")
     else:
-        h1, h2, h3, _ = st.columns([3, 1.5, 2, 1])
+        h1, h2, h3, _, _ = st.columns(cols)
         h1.markdown("<div class='cp-colhead'>Name</div>", unsafe_allow_html=True)
         h2.markdown("<div class='cp-colhead'>Cost</div>", unsafe_allow_html=True)
         h3.markdown("<div class='cp-colhead'>Date</div>", unsafe_allow_html=True)
         for i, e in enumerate(exps):
             with st.container(border=True):
-                c1, c2, c3, c4 = st.columns([3, 1.5, 2, 1], vertical_alignment="center")
+                c1, c2, c3, c4, c5 = st.columns(cols, vertical_alignment="center")
                 c1.markdown(f"**{md(e['name'])}**")
                 c2.markdown(md(cents(e["cost"])))
                 c3.markdown(full_date(e["date"]))
-                if c4.button("Edit", key=f"edit-btn-{i}", width="stretch"):
+                if c4.button(":material/edit:", key=f"pen-{i}", type="tertiary", help="Edit"):
                     st.session_state.edit_idx = i
                     st.session_state.dialog = "edit_expense"
+                    st.rerun()
+                if c5.button(":material/delete:", key=f"bin-{i}", type="tertiary", help="Delete"):
+                    st.session_state.del_idx = i
+                    st.session_state.dialog = "delete_expense"
                     st.rerun()
     if PREVIEW_NOTE:
         st.caption(PREVIEW_NOTE)
@@ -403,7 +416,7 @@ def _api_error(e):
         return str(e)
 
 
-@st.dialog("Delayed Receivable", width="large")
+@st.dialog("Late Receivable", width="large")
 def new_promise_dialog():
     """The owner heard it in person or on the phone: preview the impact, approve, and the forecast,
     alert and DevRev follow-up update together. All math happens in the backend."""
@@ -472,7 +485,7 @@ def view_promises_dialog():
         st.error(_api_error(e))
         return
     if not items:
-        st.caption("Nothing tracked yet. Record one from ☰ → New → Delayed Receivable.")
+        st.caption("Nothing tracked yet. Record one from ☰ → New → Late Receivable.")
     for f_ in items:
         with st.container(border=True):
             badge = "🟢 open" if f_["status"] == "open" else "✅ done"
@@ -500,7 +513,7 @@ def top_bar():
             post("/api/events", {"type": "payment_delayed", "txn": "T08", "days": 6})
             st.session_state.data_ver += 1
             st.session_state.menu_open = False
-            st.session_state.ridgeline_text = True     # show the customer's text message
+            st.toast("Event sent. ForeCash is investigating.")
             st.rerun()                               # numbers changed: refresh the whole page
         if c3.button("Reset demo", width="stretch"):
             post("/api/demo/reset")
@@ -516,9 +529,9 @@ def top_bar():
                           width="stretch", on_click=toggle_submenu, args=("new",))
                 if sub == "new":
                     with st.container(key="sub-new"):
-                        if st.button("Expense", key="m-new-exp", width="stretch"):
+                        if st.button("New expense", key="m-new-exp", width="stretch"):
                             open_dialog("new_expense")
-                        if st.button("Delayed Receivable", key="m-new-promise", width="stretch"):
+                        if st.button("Late Receivable", key="m-new-promise", width="stretch"):
                             open_dialog("new_promise")
                 # View
                 st.button(("▾ " if sub == "view" else "▸ ") + "View", key="m-view",
@@ -533,24 +546,6 @@ def top_bar():
 
 top_bar()
 
-# ---------- "Try a fix" pop-up: tick options, Apply closes the window ----------
-@st.dialog("Try a fix", width="large")
-def fix_dialog():
-    levers = get("/api/levers")
-    st.caption("Tick the options to test, then press Apply. Nothing is paid or sent; this only tests the plan.")
-    chosen = [lv["id"] for lv in levers
-              if st.checkbox(clean(lv["name"]), value=lv["id"] in st.session_state.applied_fixes, key=f"fx-{lv['id']}")]
-    b1, b2 = st.columns(2)
-    if b1.button("Apply changes", type="primary", width="stretch", key="fx-apply"):
-        st.session_state.applied_fixes = chosen
-        st.session_state.data_ver += 1
-        st.rerun()
-    if b2.button("Clear", width="stretch", key="fx-clear"):
-        st.session_state.applied_fixes = []
-        st.session_state.data_ver += 1
-        st.rerun()
-
-
 # open whichever pop-up the menu asked for (pop = it only opens once)
 dlg = st.session_state.pop("dialog", None)
 if dlg == "new_expense":
@@ -559,48 +554,16 @@ elif dlg == "view_expenses":
     view_expenses_dialog()
 elif dlg == "edit_expense":
     edit_expense_dialog(st.session_state.get("edit_idx"))
+elif dlg == "delete_expense":
+    delete_expense_dialog(st.session_state.get("del_idx"))
 elif dlg == "new_promise":
     new_promise_dialog()
 elif dlg == "view_promises":
     view_promises_dialog()
-elif dlg == "fix":
-    fix_dialog()
 
 msg = st.session_state.pop("toast_msg", None)
 if msg:
     st.toast(msg)
-
-# ---------- the late-payment "text message" from Ridgeline (slides in top right, fades out) ----------
-RIDGELINE_TEXT = """
-<style>
-@keyframes cp-sms { 0% {transform: translateX(120%); opacity: 0}
-                    6% {transform: translateX(0); opacity: 1}
-                    88% {transform: translateX(0); opacity: 1}
-                    100% {transform: translateX(120%); opacity: 0; visibility: hidden} }
-.cp-sms { position: fixed; top: 70px; right: 18px; z-index: 999999; width: 340px; max-width: calc(100vw - 36px);
-          background: rgba(250,250,252,.97); border-radius: 18px; padding: 12px 14px 14px;
-          box-shadow: 0 12px 32px rgba(0,0,0,.22); font-family: -apple-system, "SF Pro Text", Manrope, sans-serif;
-          animation: cp-sms 12s ease-in-out forwards; pointer-events: none; }
-.cp-sms-top { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7280; margin-bottom: 8px; }
-.cp-sms-app { width: 20px; height: 20px; border-radius: 5px; background: #34C759; color: #fff;
-              display: flex; align-items: center; justify-content: center; font-size: 12px; }
-.cp-sms-from { font-weight: 700; font-size: 14px; color: #111; margin: 0 0 6px; }
-.cp-sms-bubble { background: #E9E9EB; color: #111; border-radius: 18px 18px 18px 4px; padding: 9px 12px;
-                 font-size: 14px; line-height: 1.35; }
-</style>
-<div class="cp-sms">
-  <div class="cp-sms-top"><span class="cp-sms-app">��</span><span>MESSAGES</span><span style="margin-left:auto">now</span></div>
-  <div class="cp-sms-from">Luis Pardo · Ridgeline Corp</div>
-  <div class="cp-sms-bubble">Hi Julian, I’m really sorry. Our payment run moved because of the quarter close,
-  so invoice INV-2041 for &#36;4,000 will go out on Oct 21 instead of Oct 15. That’s 6 days late.
-  Apologies for the trouble, and thank you for understanding. – Luis</div>
-</div>
-"""
-if st.session_state.pop("ridgeline_text", False):
-    st.session_state.ridgeline_until = time.time() + 12
-sms_slot = st.empty()        # always on the page (even when empty), so nothing below it shifts
-if time.time() < st.session_state.get("ridgeline_until", 0):
-    sms_slot.markdown(RIDGELINE_TEXT, unsafe_allow_html=True)
 
 # alerts are fetched fresh every time; they decide when cached data must refresh
 alerts = get("/api/alerts")
@@ -683,11 +646,12 @@ else:
 bad = f["shortfall_vs_reserve"] > 0
 low_color = RED if f["min_balance"] < reserve else INK
 html(f"""<div class='cp-kpis'>
-<div><div class='cp-label'>Cash today</div><div class='cp-value' style='color:{RED if s['opening_cash'] < 0 else INK}'>{money(s['opening_cash'])}</div></div>
+<div><div class='cp-label'>Cash today</div><div class='cp-value'>{money(s['opening_cash'])}</div></div>
 <div><div class='cp-label'>Lowest balance</div>
- <div class='cp-value' style='color:{low_color}'>{money(f['min_balance'])}</div>
- <div class='cp-note' style='font-size:15px;font-weight:600'>{day_long(f['min_date'])}</div></div>
-<div><div class='cp-label'>Ending cash</div><div class='cp-value' style='color:{RED if f['ending_cash'] < 0 else INK}'>{money(f['ending_cash'])}</div></div>
+ <div class='cp-value' style='color:{low_color}'>{money(f['min_balance'])}
+ <span style='font-size:15px;font-weight:600'>{day_long(f['min_date'])}</span></div>
+ <div class='cp-note'>We judge safety by your worst day, not your last day.</div></div>
+<div><div class='cp-label'>Ending cash</div><div class='cp-value'>{money(f['ending_cash'])}</div></div>
 <div><div class='cp-label'>Below reserve by</div>
  <div class='cp-value' style='color:{RED if bad else GREEN}'>{money(f['shortfall_vs_reserve'])}</div></div>
 </div>""")
@@ -722,8 +686,14 @@ def forecast_section(ver, f, reserve):
             label = (f"{len(picked)} option{'s' if len(picked) != 1 else ''} applied" if picked
                      else "Pick one or more options")
             with st.container(key="fixbox"):
-                if st.button(label + "  ▾", width="stretch", key="fix-open"):
-                    open_dialog("fix")
+                with st.popover(label, width="stretch"):
+                    with st.form("fix-form", border=False):
+                        for lid, name in names.items():
+                            st.checkbox(name, key=f"lv-{lid}")
+                        b1, b2 = st.columns(2)
+                        b1.form_submit_button("Apply changes", type="primary", width="stretch",
+                                              on_click=apply_fixes, args=(list(names),))
+                        b2.form_submit_button("Clear", width="stretch", on_click=clear_fixes)
             if picked:
                 st.caption("Testing: " + md(", ".join(names[lid] for lid in picked)))
             sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)}) if picked else None
@@ -740,7 +710,7 @@ def forecast_section(ver, f, reserve):
                     html(f"<div class='cp-callout' style='background:#FCE4E2'>Still short: lowest balance "
                          f"{money(sim['min_balance'])} on {day_long(sim['min_date'])}. <strong>This fix isn’t enough.</strong></div>")
 
-    # ----- chart -----
+    # ----- the two charts, same height so their tops and bottoms line up -----
     with chart_box:
         c_bal, c_flow = st.columns([3, 2], gap="medium")
         x = [day_short(d["date"]) for d in days]
@@ -756,35 +726,34 @@ def forecast_section(ver, f, reserve):
         low_label = ("Payroll day · " if f["min_date"][:10] == PAYROLL_DATE else "Lowest · ") + money(f["min_balance"])
         fig.add_annotation(x=day_short(f["min_date"]), y=f["min_balance"], text=low_label, showarrow=True,
                            arrowhead=0, ay=-34, font=dict(color=RED if bad else INK, size=13), bgcolor="#fff")
-        fig.update_layout(height=400, margin=dict(l=20, r=30, t=20, b=20), plot_bgcolor="#fff",
-                          paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=13, color=INK),
+        fig.update_layout(height=CHART_HEIGHT, margin=dict(l=20, r=30, t=20, b=20), plot_bgcolor="#fff",
+                          paper_bgcolor="#fff", font=dict(family=FONT, size=13, color=INK),
+                          hoverlabel=dict(font_family=FONT),
                           legend_orientation="h", legend_y=1.1,
                           yaxis=dict(tickprefix="$", tickformat=",", gridcolor="#EEF2F1", automargin=True),
                           xaxis=dict(gridcolor="#EEF2F1", automargin=True, tickfont=dict(size=13)))
         with c_bal:
             chart(fig)
-        with c_flow:      # where the money comes from and goes, day by day (engine numbers, no math here)
-            st.markdown("**Revenue vs. expenses**")
+        with c_flow:      # revenue vs. expenses, day by day (engine numbers, no math here)
             txns = cget("/api/transactions", ver, scenario=SCENARIO)
             by_day = {}
             for t in sorted(txns, key=lambda t: -t["amount"]):
                 by_day.setdefault((t["date"][:10], t["direction"]), []).append(
                     f"{clean(t['description'])}: {money(t['amount'])}")
+            dates = [d["date"][:10] for d in days]
             flow = go.Figure()
-            for direction, label, key, color in (("in", "Revenue", "inflows", GREEN), ("out", "Expenses", "outflows", RED)):
-                tips = []
-                for d in days:
-                    items = by_day.get((d["date"][:10], direction), [])
-                    tip = "<br>".join(items) if items else "nothing scheduled"
-                    if len(items) > 1:          # the day's total comes from the engine, not added up here
-                        tip += f"<br><b>Total: {money(d[key])}</b>"
-                    tips.append(tip)
-                flow.add_bar(x=x, y=[d[key] for d in days], name=label, marker_color=color, customdata=tips,
+            for direction, label, key, color in (("in", "Revenue", "inflows", GREEN),
+                                                 ("out", "Expenses", "outflows", RED)):
+                flow.add_bar(x=x, y=[d[key] for d in days], name=label, marker_color=color,
+                             customdata=["<br>".join(by_day.get((dt, direction), ["nothing scheduled"])) for dt in dates],
                              hovertemplate=f"<b>{label}, %{{x}}</b><br>%{{customdata}}<extra></extra>")
-            flow.update_layout(barmode="group", height=372, margin=dict(l=20, r=20, t=10, b=20), plot_bgcolor="#fff",
-                               paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=13, color=INK),
-                               legend_orientation="h", legend_y=1.12, bargap=0.25,
-                               legend_itemclick="toggleothers", legend_itemdoubleclick="toggle",
+            flow.update_layout(barmode="group", height=CHART_HEIGHT, margin=dict(l=20, r=20, t=64, b=20),
+                               title=dict(text="<b>Revenue vs. expenses</b>", x=0.02, y=0.97,
+                                          font=dict(family=FONT, size=16, color=INK)),
+                               plot_bgcolor="#fff", paper_bgcolor="#fff",
+                               font=dict(family=FONT, size=13, color=INK), hoverlabel=dict(font_family=FONT),
+                               legend=dict(orientation="h", x=0, y=1.07, font=dict(family=FONT, size=13)),
+                               bargap=0.25,
                                yaxis=dict(tickprefix="$", tickformat=",", gridcolor="#EEF2F1", automargin=True),
                                xaxis=dict(automargin=True, tickfont=dict(size=13)))
             chart(flow)
@@ -842,7 +811,7 @@ def forecast_section(ver, f, reserve):
                                        marker_color=colors, cliponaxis=False, constraintext="none",
                                        textfont=dict(size=14, color=INK)))
                 bar.update_layout(height=290, margin=dict(l=10, r=10, t=50, b=20), plot_bgcolor="#fff",
-                                  paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=14, color=INK),
+                                  paper_bgcolor="#fff", font=dict(family=FONT, size=14, color=INK),
                                   yaxis=dict(visible=False),
                                   xaxis=dict(automargin=True, tickfont=dict(size=14)))
                 chart(bar)
@@ -926,7 +895,7 @@ else:
 
 with c_ok:
     st.markdown("### Ready for your approval")
-    acts = get("/api/actions") if bad else []    # drafts only matter while there's a cash problem
+    acts = get("/api/actions")
     if not acts:
         st.caption("Nothing to approve yet.")
     for a in acts:
@@ -943,6 +912,7 @@ with c_ok:
                     st.rerun()
             else:
                 st.markdown(f"Status: `{a['status']}`")
+    st.caption("Nothing is sent without your approval. Approving twice never sends twice.")
     for title, body in right_sections:     # the rest of the AI memo (cheapest plan, cost of waiting, ...)
         memo_card(title, body)
 
