@@ -357,9 +357,11 @@ def view_expenses_dialog():
 def top_bar():
     with st.container(key="topbar"):
         c0, c1, c2, c3 = st.columns([0.5, 4.5, 3.8, 1.4], vertical_alignment="center")
-        c0.button("☰", key="menubtn", help="Menu", on_click=toggle_menu)
+        c0.markdown("🍦")
         c1.markdown("CashPilot")
-        if c2.button("Simulate: Ridgeline pays 6 days late", type="primary", width="stretch"):
+        moved = any(t["id"] == "T08" and t["date"][:10] != "2026-10-15" for t in get("/api/transactions"))
+        if c2.button("Simulate: Ridgeline pays 6 days late", type="primary", width="stretch", disabled=moved,
+                     help="Already applied. Press Reset demo to run it again." if moved else None):
             post("/api/events", {"type": "payment_delayed", "txn": "T08", "days": 6})
             st.session_state.data_ver += 1
             st.session_state.menu_open = False
@@ -595,7 +597,10 @@ with c_ai:
     inv = next((a["investigation"] for a in alerts if a.get("investigation")), None)
     if st.button("Investigate now"):
         with st.spinner("CashPilot is checking the numbers…"):
-            inv = post("/api/investigate", {"scenario": SCENARIO})
+            try:
+                inv = post("/api/investigate", {"scenario": SCENARIO})
+            except Exception:
+                st.warning("The analysis is taking longer than expected. Try again in a moment.")
     if inv:
         offline = health["model_provider"] == "stub" or inv.get("mode") in ("template", "stub", "fallback")
         if offline:
