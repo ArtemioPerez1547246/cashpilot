@@ -364,7 +364,7 @@ def _api_error(e):
         return str(e)
 
 
-@st.dialog("Customer will pay later (DevRev)", width="large")
+@st.dialog("Late Receivable", width="large")
 def new_promise_dialog():
     """The owner heard it in person or on the phone: preview the impact, approve, and the forecast,
     alert and DevRev follow-up update together. All math happens in the backend."""
@@ -433,7 +433,7 @@ def view_promises_dialog():
         st.error(_api_error(e))
         return
     if not items:
-        st.caption("Nothing tracked yet. Record one from ☰ → New → Customer will pay later (DevRev).")
+        st.caption("Nothing tracked yet. Record one from ☰ → New → Late Receivable.")
     for f_ in items:
         with st.container(border=True):
             badge = "🟢 open" if f_["status"] == "open" else "✅ done"
@@ -479,7 +479,7 @@ def top_bar():
                     with st.container(key="sub-new"):
                         if st.button("New expense", key="m-new-exp", width="stretch"):
                             open_dialog("new_expense")
-                        if st.button("Customer will pay later (DevRev)", key="m-new-promise", width="stretch"):
+                        if st.button("Late Receivable", key="m-new-promise", width="stretch"):
                             open_dialog("new_promise")
                 # View
                 st.button(("▾ " if sub == "view" else "▸ ") + "View", key="m-view",

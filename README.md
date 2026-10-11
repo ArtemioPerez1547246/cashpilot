@@ -47,7 +47,7 @@ Owner hears "we'll pay on the 21st"          DevRev Computer + commitment-to-act
 ## Demo (3 minutes)
 
 1. **Reset demo** → "You're safe this week."
-2. ☰ → New → **Customer will pay later (DevRev)** → T08 Ridgeline, Oct 21, Luis Pardo → Preview → Approve
+2. ☰ → New → **Late Receivable** → T08 Ridgeline, Oct 21, Luis Pardo → Preview → Approve
    (or press **Simulate: Ridgeline pays 6 days late**).
 3. Red alert: **−$2,200 on Fri Oct 16**. The DevRev panel shows the customer's own words with the source.
 4. Try a fix → only the freezer deferral → ending cash looks fine, but the lowest day is still **$300**.
