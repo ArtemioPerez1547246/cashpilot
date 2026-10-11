@@ -690,6 +690,12 @@ def forecast_section(ver, f, reserve):
         else:
             st.markdown("### No safe plan")
             st.error(md(p["note"]))
+        if p["levers"] or not p["feasible"]:
+            with st.expander("How CashPilot priced every option"):
+                for lv in sorted(levers, key=lambda l: l["cost_usd"]):
+                    tag = " · ✅ in the plan" if lv["id"] in p["levers"] else (" · last resort" if lv.get("last_resort") else "")
+                    st.markdown(md(f"**{cents(lv['cost_usd'])}** · {lv['name']}{tag}"))
+                    st.caption(md(lv["cost_basis"] + (f" · decide by {day_long(lv['deadline'])}" if lv.get("deadline") else "")))
 
     # ----- cost of waiting -----
     with c_wait:
@@ -782,14 +788,14 @@ with c_ai:
                      f"<span class='cp-pill' style='background:#FCE4E2'>⚠ Unverified: {inv['unverified_amounts']}</span>")
             tools = len({t["tool"] for t in inv["trace"]})
             where = PROVIDERS.get(health["model_provider"], health["model_provider"])
-            html(f"{check}<span class='cp-pill' style='background:#EEF2F1'>AI on {where} · {tools} tools used</span>")
+            html(f"{check}<span class='cp-pill' style='background:#EEF2F1'>Strands agent · AI on {where} · {tools} tools used</span>")
         sections = split_memo(inv["memo"])
         for title, body in sections:
             if not title or title.lower().startswith(MEMO_LEFT):
                 memo_card(title, body)
             else:
                 right_sections.append((title, body))
-        with st.expander("See how the AI worked (tool trace)"):
+        with st.expander(f"How the Strands agent worked: tool trace ({len(inv['trace'])} calls)"):
             for t in inv["trace"]:
                 st.markdown(md(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}"))
     else:

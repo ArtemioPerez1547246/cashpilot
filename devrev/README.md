@@ -50,18 +50,24 @@ idempotent creation inside a single SQLite write transaction.
 5. Add the skill: Settings > My Computer > Skills > Add Skill (upload `skills/commitment-to-action`).
    Org admin can push it to the team via Agent Admin > Skills once it passes the tests below.
 
-## Observed tests (fill in with real results before submitting)
+## Observed tests (run in DevRev Computer on Oct 10, 2026)
 | Test | Who | Account | Result |
 |---|---|---|---|
-| Positive run, approve 1 task | builder | | |
-| Same request again: no duplicate | builder | | |
-| Decline the preview: nothing created | builder | | |
-| Account with no commitments | builder | | |
-| Ambiguous account name | builder | | |
-| Second teammate, own connection, different account | teammate | | |
-| Board unit tests (`pytest tests/test_devrev_board.py`) | CI | n/a | 7 passed |
+| Positive run, approve 1 task | builder | Ridgeline Corp | Pass: 5 commitments previewed with file, lines and quote; Oct 15 date treated as superseded by the Oct 21 call; approved item created as F001 |
+| Same request again: no duplicate | builder | Ridgeline Corp | Pass: `created: false`, same F001, repeat counted |
+| Decline the preview: nothing created | builder | Coldline Freezers | Pass: board unchanged |
+| Account with no commitments | builder | Bluebonnet Elementary PTA | Pass: read the full transcript, explained why each line is not a promise, created nothing |
+| Ambiguous account name | builder | "Ridgeline" | Pass: listed Ridgeline Corp and Ridgeline Events LLC with IDs and asked which |
+| Second teammate, own connection, different account | teammate | Sierra Dairy Co-op | _fill in_ |
+| Board, evidence and website-promise unit tests | CI | n/a | 15 passed (7 board, 4 evidence, 4 promise flow) |
 
 ## Known limits
 - One shared team token, not per-user authorization; `requested_by` is reported by the caller, not verified.
 - The board does not re-check source IDs against the dataset; the skill must cite real records.
 - Literal search in transcripts can miss paraphrased commitments; the skill reports coverage limits.
+- Observed miss: on Ridgeline Corp the skill did not list our own promise to send a statement copy
+  (MTG-1008-RIDGE, 01:20).
+- Observed deviation: on Coldline Freezers it kept a conditional offer ("hold until Oct 21 if you tell
+  us by Oct 13") as a proposed item instead of an open question. It stated the condition and asked first.
+- Promises recorded from the website are the owner's notes of a verbal statement, labeled as such;
+  they are weaker evidence than a transcript.

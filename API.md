@@ -26,3 +26,16 @@ All routes are under `/api` and return JSON. `scenario` is one of `normal`, `dis
 Golden results (disruption: Ridgeline pays 6 days late): lowest balance -$2,200 on Oct 16;
 freezer deferral alone leaves $300 (below the $1,500 reserve); cheapest plan decided Oct 12 is
 L01 + L05B for $9.21; decided Oct 14 it costs $124.60; decided Oct 16 there is no safe plan.
+
+## DevRev follow-up board
+
+| Method | Path | Body / query | Returns |
+|---|---|---|---|
+| GET | `/api/devrev/follow-ups` | `?account=&status=open\|done` | `{follow_ups, total, next_offset}` |
+| POST | `/api/devrev/follow-ups/{id}/status` | `?status=open\|done` | the follow-up |
+| POST | `/api/devrev/payment-update/preview` | `{txn, new_date, said_by, channel, quote, customer}` | engine before/after, follow-up draft, `already_recorded`; writes nothing |
+| POST | `/api/devrev/payment-update/apply` | same | moves the payment once (idempotent), creates or reuses the follow-up |
+
+The MCP connector for DevRev Computer is served at `/mcp` (Bearer token): `list_sources`,
+`search_evidence`, `read_evidence`, `list_follow_ups`, `get_follow_up`, `preview_follow_up`,
+`create_follow_up` (needs approval).

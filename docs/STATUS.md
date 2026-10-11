@@ -1,5 +1,12 @@
 # CashPilot status log
 
+## Sat ~11 PM — feature complete
+- Live on the Akamai Linode with Akamai inference (`mode: akamai`, verified memo).
+- DevRev: MCP connector (7 tools) registered in Computer, skill uploaded, 5 observed tests passed;
+  second-user run pending. Website menu records customer promises; DevRev panel under the alert.
+- `pytest`: 44 passed. Dashboard: one-shot Simulate, safe "Investigate now", pricing transparency.
+- Next: second-user DevRev run, rehearsal, video (due Sun 8:00 AM), live demo 9:00 AM.
+
 ## Sat 1:05 PM — repo repair (branch fix/repo-repair)
 - Commits 13642e8..5405254 on main had scrambled files (code saved under the wrong names, 8 file
   names containing code). Tests failed and the repo could not be cloned on Windows/Mac.
