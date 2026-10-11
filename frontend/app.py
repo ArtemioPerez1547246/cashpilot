@@ -650,6 +650,7 @@ def forecast_section(ver, f, reserve):
 
     # ----- chart -----
     with chart_box:
+        c_bal, c_flow = st.columns([3, 2], gap="medium")
         x = [day_short(d["date"]) for d in days]
         fig = go.Figure()
         fig.add_scatter(x=x, y=[d["closing"] for d in days], name="Current plan", mode="lines+markers",
@@ -668,7 +669,27 @@ def forecast_section(ver, f, reserve):
                           legend_orientation="h", legend_y=1.1,
                           yaxis=dict(tickprefix="$", tickformat=",", gridcolor="#EEF2F1", automargin=True),
                           xaxis=dict(gridcolor="#EEF2F1", automargin=True, tickfont=dict(size=13)))
-        chart(fig)
+        with c_bal:
+            chart(fig)
+        with c_flow:      # where the money comes from and goes, day by day (engine numbers, no math here)
+            st.markdown("**Money in vs. money out**")
+            txns = cget("/api/transactions", ver, scenario=SCENARIO)
+            by_day = {}
+            for t in sorted(txns, key=lambda t: -t["amount"]):
+                by_day.setdefault((t["date"][:10], t["direction"]), []).append(
+                    f"{clean(t['description'])}: {money(t['amount'])}")
+            dates = [d["date"][:10] for d in days]
+            flow = go.Figure()
+            for direction, label, key, color in (("in", "Money in", "inflows", GREEN), ("out", "Money out", "outflows", RED)):
+                flow.add_bar(x=x, y=[d[key] for d in days], name=label, marker_color=color,
+                             customdata=["<br>".join(by_day.get((dt, direction), ["nothing scheduled"])) for dt in dates],
+                             hovertemplate=f"<b>{label}, %{{x}}</b><br>%{{customdata}}<extra></extra>")
+            flow.update_layout(barmode="group", height=372, margin=dict(l=20, r=20, t=10, b=20), plot_bgcolor="#fff",
+                               paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=13, color=INK),
+                               legend_orientation="h", legend_y=1.12, bargap=0.25,
+                               yaxis=dict(tickprefix="$", tickformat=",", gridcolor="#EEF2F1", automargin=True),
+                               xaxis=dict(automargin=True, tickfont=dict(size=13)))
+            chart(flow)
 
     # ----- cheapest plan -----
     with c_plan:
