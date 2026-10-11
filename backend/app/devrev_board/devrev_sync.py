@@ -1,7 +1,7 @@
 """Best-effort copy of owner updates into DevRev as a comment (DevRev REST API, timeline-entries.create).
 
 Configured only on the server: DEVREV_PAT (a DevRev personal access token) and DEVREV_OBJECT_ID (the
-DevRev object to comment on, for example an account or a task). Never blocks the CashPilot update.
+DevRev object to comment on, for example an account or a task). Never blocks the ForCash update.
 """
 import os
 

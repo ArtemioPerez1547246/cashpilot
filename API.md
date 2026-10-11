@@ -1,4 +1,4 @@
-# CashPilot API
+# ForCash API
 
 All routes are under `/api` and return JSON. `scenario` is one of `normal`, `disruption`, `live`
 (default `live`, which starts as `normal` and changes when events arrive). Unknown IDs return 404.
