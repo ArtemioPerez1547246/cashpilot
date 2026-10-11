@@ -152,6 +152,7 @@ def demo_reset():
     S.reset_live()
     monitor.reset()
     clear_actions()
+    board.clear_applied()  # website updates can be re-applied in the next rehearsal
     return {"ok": True}
 
 
@@ -167,3 +168,24 @@ def devrev_set_status(follow_up_id: str, status: str):
     if f is None:
         raise HTTPException(404, detail=f"follow-up {follow_up_id} not found")
     return f
+
+
+class PaymentUpdate(BaseModel):
+    txn: str
+    new_date: str
+    said_by: str
+    channel: str = "in person"
+    quote: str = ""
+    customer: str = ""
+
+
+@app.post("/api/devrev/payment-update/preview")
+def payment_update_preview(req: PaymentUpdate):
+    from .devrev_board import payment_update
+    return payment_update.preview(req.txn, req.new_date, req.said_by, req.channel, req.quote, req.customer)
+
+
+@app.post("/api/devrev/payment-update/apply")
+def payment_update_apply(req: PaymentUpdate):
+    from .devrev_board import payment_update
+    return payment_update.apply(req.txn, req.new_date, req.said_by, req.channel, req.quote, req.customer)

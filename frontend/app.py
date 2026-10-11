@@ -352,6 +352,102 @@ def view_expenses_dialog():
         st.rerun()
 
 
+# ---------- DevRev pop-ups: record a customer's late-payment promise, see what DevRev tracks ----------
+CHANNELS = ["in person", "phone", "email", "text message", "other"]
+
+
+def _api_error(e):
+    resp = getattr(e, "response", None)
+    try:
+        return resp.json().get("detail", str(e)) if resp is not None else str(e)
+    except Exception:
+        return str(e)
+
+
+@st.dialog("Customer will pay later (DevRev)", width="large")
+def new_promise_dialog():
+    """The owner heard it in person or on the phone: preview the impact, approve, and the forecast,
+    alert and DevRev follow-up update together. All math happens in the backend."""
+    incoming = [t for t in get("/api/transactions") if t["direction"] == "in"]
+    if not incoming:
+        st.caption("No incoming payments in this week's forecast.")
+        return
+    labels = {f"{t['id']} · {clean(t['description'])} · {money(t['amount'])} · expected {day_long(t['date'])}": t
+              for t in incoming}
+    t = labels[st.selectbox("Which payment?", list(labels), key="pr-txn")]
+    customer = st.text_input("Customer", t["description"].split(" paleta")[0].split(",")[0], key=f"pr-cust-{t['id']}")
+    cur = as_date(t["date"])
+    new_date = st.date_input("New date they gave you", value=date.fromordinal(cur.toordinal() + 1),
+                             min_value=date.fromordinal(cur.toordinal() + 1), format="MM/DD/YYYY", key="pr-date")
+    c1, c2 = st.columns(2)
+    said_by = c1.text_input("Who told you?", placeholder="e.g. Luis Pardo, accounts payable", key="pr-who")
+    channel = c2.selectbox("How?", CHANNELS, key="pr-how")
+    quote = st.text_area("What did they say? (optional, their words)", max_chars=300, key="pr-quote",
+                         placeholder="We'll pay the full amount on the 21st.")
+    body = {"txn": t["id"], "new_date": new_date.isoformat(), "said_by": said_by, "channel": channel,
+            "quote": quote, "customer": customer}
+    if st.button("Preview the impact", width="stretch", key="pr-preview"):
+        try:
+            st.session_state.pr_preview = (body, post("/api/devrev/payment-update/preview", body))
+        except Exception as e:
+            st.session_state.pop("pr_preview", None)
+            st.error(_api_error(e))
+    saved = st.session_state.get("pr_preview")
+    if not saved or saved[0] != body:
+        st.caption("Preview first. Nothing changes until you approve.")
+        return
+    p = saved[1]
+    st.markdown(md(f"**{p['txn']}** moves from {day_long(p['old_date'])} to **{day_long(p['new_date'])}** "
+                   f"({p['days_later']} days later)."))
+    m1, m2 = st.columns(2)
+    m1.metric("Lowest balance now", money(p["before"]["lowest"]), day_long(p["before"]["lowest_date"]), delta_color="off")
+    m2.metric("Lowest balance after", money(p["after"]["lowest"]), day_long(p["after"]["lowest_date"]), delta_color="off")
+    if p["after"]["lowest"] < p["reserve"]:
+        st.warning(md(f"This drops cash below your {money(p['reserve'])} reserve. "
+                      "CashPilot will alert you and find the cheapest fix."))
+    if p["already_recorded"]:
+        st.info(f"DevRev already tracks this promise as {p['already_recorded']}. "
+                "Approving updates the forecast without a duplicate follow-up.")
+    else:
+        st.caption(md(f"Follow-up to create on the DevRev board: **{p['follow_up']['title']}**"))
+    left, _, right = st.columns([1, 1.2, 1])
+    if left.button("Cancel", width="stretch", key="pr-cancel"):
+        st.session_state.pop("pr_preview", None)
+        st.rerun()
+    if right.button("Approve and update", type="primary", width="stretch", key="pr-approve"):
+        try:
+            r = post("/api/devrev/payment-update/apply", body)
+            st.session_state.pop("pr_preview", None)
+            st.session_state.data_ver += 1
+            st.session_state.toast_msg = r["note"]
+            st.rerun()
+        except Exception as e:
+            st.error(_api_error(e))
+
+
+@st.dialog("Customer promises (DevRev)", width="large")
+def view_promises_dialog():
+    try:
+        items = get("/api/devrev/follow-ups")["follow_ups"]
+    except Exception as e:
+        st.error(_api_error(e))
+        return
+    if not items:
+        st.caption("Nothing tracked yet. Record one from ☰ → New → Customer will pay later (DevRev).")
+    for f_ in items:
+        with st.container(border=True):
+            badge = "🟢 open" if f_["status"] == "open" else "✅ done"
+            st.markdown(md(f"**{f_['id']} · {f_['title']}** · {f_['account']} · {badge}"))
+            st.caption(md(f"Owner: {f_['owner']} · Due: {f_['due_date']}"))
+            for s_ in f_["sources"]:
+                st.caption(md(f"📎 {s_['ref']}" + (f" lines {s_['lines']}" if s_["lines"] else "")
+                              + (f" — “{s_['quote']}”" if s_["quote"] else "")))
+    st.caption("Full details, Mark done and Reopen: the “Enterprise follow-ups (DevRev)” view.")
+    _, right = st.columns([3, 1])
+    if right.button("Done", type="primary", key="pr-view-done", width="stretch"):
+        st.rerun()
+
+
 # ---------- top bar: menu, name, demo controls (a fragment: the menu only refreshes this bar) ----------
 @st.fragment
 def top_bar():
@@ -383,6 +479,8 @@ def top_bar():
                     with st.container(key="sub-new"):
                         if st.button("New expense", key="m-new-exp", width="stretch"):
                             open_dialog("new_expense")
+                        if st.button("Customer will pay later (DevRev)", key="m-new-promise", width="stretch"):
+                            open_dialog("new_promise")
                 # View
                 st.button(("▾ " if sub == "view" else "▸ ") + "View", key="m-view",
                           width="stretch", on_click=toggle_submenu, args=("view",))
@@ -390,6 +488,8 @@ def top_bar():
                     with st.container(key="sub-view"):
                         if st.button("Existing expense", key="m-view-exp", width="stretch"):
                             open_dialog("view_expenses")
+                        if st.button("Customer promises (DevRev)", key="m-view-promise", width="stretch"):
+                            open_dialog("view_promises")
 
 
 top_bar()
@@ -402,6 +502,10 @@ elif dlg == "view_expenses":
     view_expenses_dialog()
 elif dlg == "edit_expense":
     edit_expense_dialog(st.session_state.get("edit_idx"))
+elif dlg == "new_promise":
+    new_promise_dialog()
+elif dlg == "view_promises":
+    view_promises_dialog()
 
 msg = st.session_state.pop("toast_msg", None)
 if msg:
@@ -649,7 +753,7 @@ def devrev_commitments_panel():
             for s_ in f["sources"]:
                 st.caption(f"📎 `{s_['ref']}`" + (f" lines {s_['lines']}" if s_["lines"] else "")
                            + (f" — “{esc(s_['quote'])}”" if s_["quote"] else ""))
-        st.caption("Found in call transcripts by DevRev Computer and approved by the owner. Read-only here.")
+        st.caption("From DevRev: found in call transcripts or recorded by you, and approved by you. Read-only here.")
         st.link_button("Open DevRev Computer", os.getenv("DEVREV_URL", "https://app.devrev.ai"))
 
 

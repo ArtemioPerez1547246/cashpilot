@@ -30,6 +30,7 @@ def _db():
         title TEXT NOT NULL, details TEXT NOT NULL, owner TEXT NOT NULL, due_date TEXT NOT NULL,
         sources TEXT NOT NULL, requested_by TEXT NOT NULL, status TEXT NOT NULL,
         repeat_attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""")
+    conn.execute("CREATE TABLE IF NOT EXISTS applied_updates (key TEXT PRIMARY KEY, created_at TEXT NOT NULL)")
     return conn
 
 
@@ -164,3 +165,29 @@ def clear():
     """Tests and manual reset only. Not exposed through MCP or the API."""
     with _db() as conn:
         conn.execute("DELETE FROM follow_ups")
+
+
+def mark_applied(key):
+    """True the first time a website update key is applied (atomic); False on any repeat."""
+    with _db() as conn:
+        cur = conn.execute("INSERT OR IGNORE INTO applied_updates VALUES (?, ?)",
+                           (key, datetime.now(timezone.utc).isoformat()))
+        return cur.rowcount == 1
+
+
+def clear_applied():
+    """Called by 'Reset demo' so a rehearsal can apply the same update again."""
+    with _db() as conn:
+        conn.execute("DELETE FROM applied_updates")
+
+
+def find_open_match(account, due_date):
+    for f in list_follow_ups(account=account, status="open", limit=100)["follow_ups"]:
+        if f["due_date"] == due_date:
+            return f
+    return None
+
+
+def is_applied(key):
+    with _db() as conn:
+        return conn.execute("SELECT 1 FROM applied_updates WHERE key = ?", (key,)).fetchone() is not None
