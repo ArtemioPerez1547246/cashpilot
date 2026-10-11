@@ -22,7 +22,7 @@ every dollar figure it writes is checked against the engine. Nothing is sent unt
 | Sponsor | What we built | Where to see it | Code |
 |---|---|---|---|
 | **Flex · Best FinTech** | An optimizer that prices financing options from stated terms (assumed rates are labeled in `levers.json`) (credit line at 12% APR, invoice advance fee, merchant cash advance factor rate, late fees, free reschedules) and tests every combination to keep **every day** above the reserve. Cost of waiting: $9.21 → $124.60 → no safe plan. | "Cheapest plan" + "How ForeCash priced every option" + "What waiting costs you" | `backend/app/engine/` |
-| **AWS · Best use of Strands Agents** | A Strands agent with 6 tools (forecast, drivers, optimizer, cost of waiting, transactions, draft action). A verifier checks every dollar amount and transaction ID in the memo against tool outputs and asks the agent to rewrite if any don't match. Visible tool trace. | "What happened and why" → ✓ badge + "tool trace" | `backend/app/agent/` |
+| **AWS · Best use of Strands Agents** | A Strands agent with 6 engine tools, a **BeforeToolCallEvent guardrail hook** that blocks any action the optimizer didn't choose, and **structured output** (`CashMemo`) checked field by field against the engine, so the right number has to be in the right place. Visible tool trace; one-line model switch. | "What happened and why" → 🛡 hooks, 🧾 structured, ✓ pills + tool trace | `backend/app/agent/` |
 | **Akamai · Cloud AI** | Runs on an Akamai Linode (Docker Compose + Caddy HTTPS). The agent's model is Akamai hosted inference (`hackathon-chat`). The DevRev MCP connector is served from the same box. | Live URL · "AI on Akamai" pill | `deploy/`, `backend/app/agent/agent.py` |
 | **DevRev · Computer** | A combined build: one MCP connector (7 tools: read-only evidence search + an approval-gated follow-up board with idempotency) and a reusable Computer skill that turns customer promises in call transcripts into tracked follow-ups with file, line range and sha256. The owner can also record a promise from the website. Tested end to end in Computer (results in `devrev/README.md`). | ☰ → New / View → "(DevRev)" · DevRev panel under the alert · "Enterprise follow-ups (DevRev)" view | `devrev/`, `backend/app/devrev_board/` |
 
@@ -53,6 +53,34 @@ Owner hears "we'll pay on the 21st"          DevRev Computer + commitment-to-act
 4. Try a fix → only the freezer deferral → ending cash looks fine, but the lowest day is still **$300**.
 5. Cheapest safe plan **$9.21**; cost of waiting **$9.21 / $124.60 / no safe plan**.
 6. The Strands memo (✓ verified, tool trace) → approve one drafted action.
+
+## How we use Strands Agents
+
+ForeCash's rule is **the engine decides, the agent explains, and Strands enforces it.** Each piece below is a
+real Strands feature, with the file it lives in.
+
+| Strands feature | What it does in ForeCash | Where |
+|---|---|---|
+| **Agent + `@tool`** | One agent with 6 tools that wrap the deterministic engine: `get_transactions`, `forecast_cash_flow`, `find_drivers`, `optimize_plan`, `cost_of_waiting`, `draft_action`. Tools return JSON; the model never does arithmetic. | `backend/app/agent/tools.py` |
+| **Hooks (`BeforeToolCallEvent`, `cancel_tool`)** | A guardrail runs before every tool call. It blocks `draft_action` unless the lever is in the optimizer's latest feasible plan, blocks drafting before a plan exists or when no safe plan exists, and caps calls per tool (stops loops and runaway cost). Each block is written to the tool trace and counted on screen. | `backend/app/agent/guardrails.py` |
+| **Structured output (`structured_output_model`)** | The agent returns a typed `CashMemo` (lowest balance and date, cause IDs, plan levers and cost, cost of waiting per day, drafted actions). Every field is compared with the engine; a wrong field is sent back to the agent once by name, and if it is still wrong the memo is marked unverified. | `backend/app/agent/structured.py` |
+| **Model providers** | One environment variable switches models: Akamai hosted inference (OpenAI-compatible `OpenAIModel`), Amazon Bedrock (`BedrockModel`), any OpenAI-compatible endpoint, or a no-model stub. The live demo runs on Akamai. | `backend/app/agent/agent.py` (`make_model`) |
+| **Tool trace** | Every tool call is recorded with its input, a summary and its duration, and shown under "How the Strands agent worked". | `tools.py` (`_record`), dashboard |
+
+**Two layers of checking.** The structured check proves each key number is in the right field. The
+verifier (`backend/app/agent/verifier.py`) also checks that every dollar amount and transaction ID in the
+written memo appears in a tool output. The ✓ badge appears only if both pass.
+
+**Honest fallbacks.** If the model is down or structured output isn't available, ForeCash runs the same
+tools in a fixed order and writes a template memo, and the screen says so ("AI offline: using built-in
+analysis"). A template memo is never presented as AI output.
+
+**Deliberate limits.** The prompt fixes the tool order, and all math stays in the engine. That is a choice
+for a finance tool: Strands controls what the agent may do, rather than letting it improvise with money.
+
+**Tests:** `backend/tests/test_guardrails.py` (plan-only drafting, call limits), `backend/tests/test_structured.py`
+(swapped costs, flipped sign, wrong day, wrong plan and missing cause are all caught), and
+`backend/check_model.py` (prints PASS when a real model drives the agent end to end).
 
 ## Rules we hold ourselves to
 
