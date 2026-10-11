@@ -107,10 +107,14 @@ class BearerGate:
             supplied = dict(scope.get("headers", [])).get(b"authorization", b"").strip()
             parts = supplied.split(None, 1)          # accept "Bearer <token>" or the raw token (DevRev PAT style)
             token = parts[1] if len(parts) == 2 and parts[0].lower() in (b"bearer", b"token") else supplied
-            if not hmac.compare_digest(token, TOKEN):
+            from urllib.parse import parse_qs     # also accept ?key=<token> in the connector URL
+            qkey = (parse_qs(scope.get("query_string", b"").decode()).get("key") or [""])[0].encode()
+            if not (hmac.compare_digest(token, TOKEN) or (qkey and hmac.compare_digest(qkey, TOKEN))):
                 scheme = parts[0][:10].decode(errors="replace") if len(parts) == 2 else ("raw" if supplied else "none")
+                hint = ("header CONTAINS the token plus extra text" if TOKEN in supplied
+                        else f"header token starts with {token[:4].decode(errors='replace')!r}")
                 print(f"[board] 401: auth scheme={scheme!r} header length={len(supplied)}, "
-                      f"expected token length={len(TOKEN)}", flush=True)
+                      f"expected token length={len(TOKEN)}; {hint}; url key given={bool(qkey)}", flush=True)
                 await send({"type": "http.response.start", "status": 401,
                             "headers": [(b"content-type", b"application/json"), (b"www-authenticate", b"Bearer")]})
                 await send({"type": "http.response.body", "body": b'{"error":"unauthorized"}'})
