@@ -287,8 +287,8 @@ view = st.radio("View", ["CashPilot", "Enterprise follow-ups (DevRev)"], horizon
 if view != "CashPilot":
     st.title("Enterprise follow-ups (DevRev)")
     st.caption("Created by DevRev Computer through our MCP connector, after the user approved each preview. "
-               "Evidence comes only from DevRev's Enterprise-Bench synthetic data; nothing here touches "
-               "CashPilot's cash data.")
+               "Evidence: synthetic call transcripts written for this demo (DevRev confirmed teams may load their own data). "
+               "Open follow-ups about incoming payments also appear on the CashPilot page.")
     if st.button("Refresh"):
         st.rerun()
     acct = st.text_input("Filter by account", "")
@@ -304,7 +304,7 @@ if view != "CashPilot":
         with st.container(border=True):
             badge = "🟢 open" if f["status"] == "open" else "✅ done"
             st.write(f"**{f['id']} · " + f['title'].replace('$', r'\$') + f"** · {f['account']} · {badge}")
-            st.caption(f"Owner: {f['owner']} · Due: {f['due_date']} · Requested by {f['requested_by']} "
+            st.caption(f"Owner: {f['owner']} · Due: {f['due_date']} · Requested via DevRev Computer "
                        f"· created {f['created_at'][:16].replace('T', ' ')} UTC"
                        + (f" · repeat runs blocked: {f['repeat_attempts']}" if f["repeat_attempts"] else ""))
             if f["details"]:
@@ -316,6 +316,9 @@ if view != "CashPilot":
                            + (f" — “{s_['quote']}”" if s_["quote"] else ""))
             if f["status"] == "open" and st.button("Mark done", key=f"done-{f['id']}"):
                 post(f"/api/devrev/follow-ups/{f['id']}/status?status=done")
+                st.rerun()
+            if f["status"] == "done" and st.button("Reopen", key=f"reopen-{f['id']}"):
+                post(f"/api/devrev/follow-ups/{f['id']}/status?status=open")
                 st.rerun()
     st.stop()
 
