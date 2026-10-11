@@ -35,7 +35,7 @@ SAMPLE_EXPENSES = [
 TEAL, LIME, INK, MUTED = "#0B5D57", "#C8EF5A", "#10201E", "#3D5753"
 RED, AMBER, GREEN, BG, LINE = "#A3231A", "#C27C00", "#0B5D57", "#F2F6F5", "#98ADA9"
 
-st.set_page_config(page_title="ForCash", page_icon="🍦", layout="wide",
+st.set_page_config(page_title="ForCash", page_icon="🌪️", layout="wide",
                    initial_sidebar_state="collapsed")
 
 st.markdown(f"""
@@ -454,7 +454,7 @@ def top_bar():
     with st.container(key="topbar"):
         c0, c1, c2, c3 = st.columns([0.5, 4.5, 3.8, 1.4], vertical_alignment="center")
         c0.button("☰", key="menubtn", help="Menu", on_click=toggle_menu)
-        c1.markdown("ForCash")
+        c1.markdown("🌪️ ForCash")
         moved = any(t["id"] == "T08" and t["date"][:10] != "2026-10-15" for t in get("/api/transactions"))
         if c2.button("Simulate: Ridgeline pays 6 days late", type="primary", width="stretch", disabled=moved,
                      help="Already applied. Press Reset demo to run it again." if moved else None):
@@ -573,18 +573,18 @@ h2.markdown(f"<div style='text-align:right;font-weight:600'>Cash forecast {day_l
 # ---------- status banner ----------
 if alert and alert["status"] == "investigating":
     html("<div class='cp-alert' style='background:#FFF4CC;border:1px solid #E0C060'>"
-         "<div class='big'>ForCash is investigating a change in your cash…</div></div>")
+         "<div class='big'>🌩️ ForCash is tracking a change in your cash…</div></div>")
     time.sleep(2)
     st.rerun()
 elif f["shortfall_vs_reserve"] == 0:
     html(f"<div class='cp-alert' style='background:#DDF2EC;border:1px solid #8CC9B8'>"
-         f"<div class='big' style='color:{GREEN}'>You’re safe this week. Lowest balance: {money(f['min_balance'])} "
+         f"<div class='big' style='color:{GREEN}'>☀️ Clear skies: you’re safe this week. Lowest balance: {money(f['min_balance'])} "
          f"on {day_long(f['min_date'])}{payroll_tag(f['min_date'])}.</div></div>")
 else:
     proof = ("<div style='font-size:14px;margin-top:4px'>ForCash spotted this on its own and investigated. "
              "Nobody had to ask.</div>") if alert else ""
     html(f"<div class='cp-alert' style='background:#FCE4E2;border:1px solid #E5A19A'>"
-         f"<div class='big' style='color:#7E1A12'>Cash runs short: {money(f['min_balance'])} on "
+         f"<div class='big' style='color:#7E1A12'>🌪️ Storm warning: cash runs short: {money(f['min_balance'])} on "
          f"{day_long(f['min_date'])}{payroll_tag(f['min_date'])}. {EVENT_LINE if alert else ''}</div>{proof}</div>")
 
 # ---------- four numbers in a row ----------
@@ -601,6 +601,33 @@ html(f"""<div class='cp-kpis'>
  <div class='cp-value' style='color:{RED if bad else GREEN}'>{money(f['shortfall_vs_reserve'])}</div></div>
 </div>""")
 
+
+# ---------- 7-day cash forecast, weather style (icons from comparisons only, no math) ----------
+def weather(d, reserve):
+    if d["closing"] < 0:
+        return "🌪️", "Tornado", RED
+    if d["closing"] < reserve:
+        return "⛈️", "Storm", AMBER
+    if d["outflows"] > d["inflows"]:
+        return "⛅", "Cloudy", MUTED
+    return "☀️", "Clear", GREEN
+
+
+cards = []
+for d in days:
+    icon, word, color = weather(d, reserve)
+    border = f"2px solid {color}" if word in ("Tornado", "Storm") else "1px solid #D5E2DF"
+    cards.append(f"<div style='background:#fff;border:{border};border-radius:8px;padding:10px 6px;text-align:center'>"
+                 f"<div style='font-weight:700;font-size:14px'>{day_short(d['date'])}</div>"
+                 f"<div style='font-size:34px;line-height:1.3'>{icon}</div>"
+                 f"<div style='font-weight:800;font-size:17px;color:{color if word in ('Tornado', 'Storm') else INK}'>"
+                 f"{money(d['closing'])}</div>"
+                 f"<div class='cp-note'>{word}{payroll_tag(d['date'])}</div></div>")
+html("<div style='font-weight:800;font-size:18px;margin:2px 0 6px'>7-day cash forecast</div>"
+     f"<div style='display:grid;grid-template-columns:repeat({len(cards)},minmax(90px,1fr));gap:8px;"
+     f"overflow-x:auto;margin-bottom:6px'>{''.join(cards)}</div>"
+     f"<div class='cp-note' style='margin-bottom:14px'>☀️ more coming in than going out · ⛅ more going out · "
+     f"⛈️ below your {money(reserve)} reserve · 🌪️ below $0</div>")
 
 # ---------- chart + try a fix + plan + waiting (a fragment: picking an option only refreshes this part) ----------
 @st.fragment
