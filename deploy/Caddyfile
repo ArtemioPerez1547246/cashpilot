@@ -3,8 +3,11 @@
 	handle /mcp* {
 		reverse_proxy board:8001
 	}
-	handle /api/* {
+	handle /api/health {
 		reverse_proxy api:8000
+	}
+	handle /api/* {
+		respond "Not found" 404
 	}
 	handle {
 		reverse_proxy ui:8501

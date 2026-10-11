@@ -4,8 +4,8 @@
 between the call and the task tracker, or get tracked twice, or get tracked without proof of what
 was actually promised.
 
-**Solution.** One MCP connector with two halves: read-only Enterprise-Bench evidence tools (adapted from DevRev's Evidence Vault starter) and an approval-gated follow-up board. A DevRev Computer skill (`skills/commitment-to-action/SKILL.md`) finds explicit
-commitments for any account in the Enterprise-Bench data, shows a preview with source evidence,
+**Solution.** One MCP connector with two halves: read-only evidence tools (adapted from DevRev's Evidence Vault starter) and an approval-gated follow-up board. A DevRev Computer skill (`skills/commitment-to-action/SKILL.md`) finds explicit
+commitments for any account in our synthetic call transcripts, shows a preview with source evidence,
 and, only after the user approves, creates tracked tasks on the ForeCash follow-up board through
 our MCP connector. Re-running it never creates duplicates. Any teammate with their own connection
 can run it on any account.
@@ -25,7 +25,7 @@ state volume → ForeCash dashboard, view "Enterprise follow-ups (DevRev)".
 ## Tools
 | Tool | What it does | Computer access mode |
 |---|---|---|
-| `list_sources(prefix, offset, limit)` | Enterprise-Bench export files (transcripts, CRM, PM, KB, internal docs) | Always allow |
+| `list_sources(prefix, offset, limit)` | Evidence files (synthetic transcripts + accounts) | Always allow |
 | `search_evidence(query, prefix, offset, limit)` | Literal search, one hit per file, with sha256 + line | Always allow |
 | `read_evidence(path, start_line, max_lines)` | Bounded read; cite path + sha256 + line range | Always allow |
 | `list_follow_ups(account, status, limit, offset)` | Existing tasks, paged | Always allow |

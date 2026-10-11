@@ -1,4 +1,4 @@
-"""Read-only Enterprise-Bench evidence (adapted from DevRev's Evidence Vault starter).
+"""Read-only evidence files (synthetic transcripts our team wrote; adapted from DevRev's Evidence Vault starter).
 
 Serves only the approved export folders under EB_DATA_DIR. Every result carries the file path,
 its sha256 and the line range, so each follow-up can cite exactly where a promise was made.
@@ -18,7 +18,7 @@ def data_dir():
     raw = os.getenv("EB_DATA_DIR", "")
     p = Path(raw).resolve() if raw else None
     if not p or not p.is_dir() or not any((p / f).is_dir() for f in ALLOWED):
-        raise ValueError("Enterprise-Bench export is not mounted on the server (EB_DATA_DIR). "
+        raise ValueError("Evidence files are not mounted on the server (EB_DATA_DIR). "
                          "Tell the user the evidence connector has no data yet; do not guess.")
     return p
 
@@ -30,7 +30,7 @@ def safe_path(relative):
         raise ValueError("Path outside the dataset is forbidden")
     rel = path.relative_to(data)
     if not rel.parts or rel.parts[0] not in ALLOWED:
-        raise ValueError("Only approved Enterprise-Bench data folders are allowed")
+        raise ValueError("Only approved evidence folders are allowed")
     if path.suffix.lower() not in EXTENSIONS or not path.is_file():
         raise ValueError("Unsupported or missing source file")
     return path

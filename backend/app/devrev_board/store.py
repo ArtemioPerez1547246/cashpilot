@@ -1,6 +1,7 @@
 """DevRev follow-up board: storage for tasks DevRev Computer creates through our MCP connector.
 
-DATA BOUNDARY: everything here is derived from DevRev's Enterprise-Bench data. It never touches
+DATA: follow-ups come from synthetic call transcripts written by our team for this demo (DevRev staff said teams
+may load their own data). It never touches
 ForeCash's Paleteria data, the cash forecast, or the ForeCash action queue (separate database).
 
 Idempotency: every follow-up has a key. Creating the same key twice returns the existing task
@@ -48,7 +49,7 @@ def validate(account, title, sources, details="", owner="", due_date="", request
     """Clean a draft. Raises ValueError with a message the caller can act on."""
     account, title = _norm(account), _norm(title)
     if not account:
-        raise ValueError("account is required: use the account name or ID from the Enterprise-Bench record")
+        raise ValueError("account is required: use the account name or ID from the evidence record")
     if not 3 <= len(title) <= 200:
         raise ValueError("title must be 3-200 characters")
     if len(details or "") > 2000:

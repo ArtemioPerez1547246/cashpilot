@@ -766,7 +766,12 @@ def forecast_section(ver, f, reserve):
                     open_dialog("fix")
             if picked:
                 st.caption("Testing: " + md(", ".join(names[lid] for lid in picked)))
-            sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)}) if picked else None
+            sim = None
+            if picked:
+                try:
+                    sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)})
+                except Exception as e:
+                    st.warning(_api_error(e) if "_api_error" in globals() else "Those options can't be combined.")
             if sim:
                 if sim["shortfall_vs_reserve"] == 0:
                     html(f"<div class='cp-callout' style='background:#DDF2EC'><strong>This keeps you safe every day.</strong> "
@@ -951,7 +956,7 @@ if trouble:
                 html("<span class='cp-pill' style='background:#FFF4CC'>AI offline: using built-in analysis.</span>")
             else:
                 check = ("<span class='cp-pill' style='background:#DDF2EC;color:#0B5D57;font-weight:600'>"
-                         "✓ Every number checked against the engine</span>") if inv["verified"] else (
+                         "✓ Every dollar amount matches an engine output</span>") if inv["verified"] else (
                          f"<span class='cp-pill' style='background:#FCE4E2'>⚠ Unverified: {inv['unverified_amounts']}</span>")
                 tools = len({t["tool"] for t in inv["trace"]})
                 where = PROVIDERS.get(health["model_provider"], health["model_provider"])

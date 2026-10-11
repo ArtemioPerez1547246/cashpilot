@@ -14,6 +14,8 @@ from .engine import scenarios as S
 
 @asynccontextmanager
 async def lifespan(_app):
+    board.clear_applied()      # the live scenario starts fresh on every restart, so the "already applied" flags must too
+    clear_actions()            # drafts belonged to the previous live state
     if os.getenv("DISABLE_MONITOR_TIMER") != "1":
         monitor.start_timer()
     yield
@@ -46,13 +48,13 @@ class OptimizeRequest(BaseModel):
 
 class InvestigateRequest(BaseModel):
     scenario: str = "live"
-    question: str = "Will we run short of cash this week? Explain why and what to do."
+    question: str = Field("Will we run short of cash this week? Explain why and what to do.", max_length=300)
 
 
 class EventRequest(BaseModel):
     type: str = "payment_delayed"
     txn: str
-    days: int = 0
+    days: int = Field(0, ge=-30, le=30)
 
 
 @app.get("/api/health")
@@ -156,7 +158,7 @@ def demo_reset():
     return {"ok": True}
 
 
-# ---------- DevRev follow-up board (Enterprise-Bench data only; separate from cash data) ----------
+# ---------- DevRev follow-up board (team-authored synthetic transcripts; separate database) ----------
 @app.get("/api/devrev/follow-ups")
 def devrev_follow_ups(account: str = "", status: str = "", limit: int = 100, offset: int = 0):
     return board.list_follow_ups(account, status, limit, offset)

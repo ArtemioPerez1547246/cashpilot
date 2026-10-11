@@ -1,4 +1,4 @@
-# CashPilot decisions
+# ForeCash (formerly CashPilot) decisions
 
 - 2026-10-10 12:09 PM — Paletería re-skin confirmed for demo business.
 - 2026-10-10 12:09 PM — Single-agent-first approach confirmed; agents-as-tools deferred until after 7 PM gate.

@@ -27,7 +27,7 @@ WRITE = {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True
 
 
 class Source(BaseModel):
-    ref: str = Field(description="Enterprise-Bench record ID, transcript ID or file path the commitment comes from")
+    ref: str = Field(description="Record ID, transcript ID or file path the commitment comes from")
     lines: str = Field("", description="Line range or location inside the source, if available")
     sha256: str = Field("", description="Source hash, if the evidence tool returned one")
     quote: str = Field("", description="Short exact quote of the commitment (max 300 chars)")
@@ -40,7 +40,7 @@ def _fields(account, title, sources, details, owner, due_date, requested_by):
 
 @mcp.tool(annotations=READ)
 def list_sources(prefix: str = "", offset: int = 0, limit: int = 20) -> dict:
-    """List Enterprise-Bench export files (folders: transcripts/, crm_json_data/, pm_json_data/,
+    """List the evidence files (synthetic, team-authored) (folders: transcripts/, crm_json_data/, pm_json_data/,
     maple_kb/, internal_docs/). Filter with prefix, e.g. 'transcripts/'. Page with next_offset."""
     return vault.list_sources(prefix, offset, limit)
 

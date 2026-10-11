@@ -26,7 +26,7 @@ def test_late_invoice():
     assert r.first_negative == "2026-10-16"
     assert r.shortfall_vs_reserve == 3700
 
-def test_oven_deferral_alone_is_fragile():
+def test_freezer_deferral_alone_is_fragile():
     late = move(TXNS, find("catering_invoice"), OUTSIDE)
     r = run(move(late, find("equipment"), OUTSIDE))
     assert (r.ending_cash, r.min_balance) == (500, 300)

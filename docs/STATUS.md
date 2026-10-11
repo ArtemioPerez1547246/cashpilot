@@ -1,4 +1,4 @@
-# CashPilot status log
+# ForeCash (formerly CashPilot) status log
 
 ## Sat ~11 PM — feature complete
 - Live on the Akamai Linode with Akamai inference (`mode: akamai`, verified memo).

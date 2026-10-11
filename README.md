@@ -21,7 +21,7 @@ every dollar figure it writes is checked against the engine. Nothing is sent unt
 
 | Sponsor | What we built | Where to see it | Code |
 |---|---|---|---|
-| **Flex · Best FinTech** | An optimizer that prices real financing costs (credit line at 12% APR, invoice advance fee, merchant cash advance factor rate, late fees, free reschedules) and tests every combination to keep **every day** above the reserve. Cost of waiting: $9.21 → $124.60 → no safe plan. | "Cheapest plan" + "How ForeCash priced every option" + "What waiting costs you" | `backend/app/engine/` |
+| **Flex · Best FinTech** | An optimizer that prices financing options from stated terms (assumed rates are labeled in `levers.json`) (credit line at 12% APR, invoice advance fee, merchant cash advance factor rate, late fees, free reschedules) and tests every combination to keep **every day** above the reserve. Cost of waiting: $9.21 → $124.60 → no safe plan. | "Cheapest plan" + "How ForeCash priced every option" + "What waiting costs you" | `backend/app/engine/` |
 | **AWS · Best use of Strands Agents** | A Strands agent with 6 tools (forecast, drivers, optimizer, cost of waiting, transactions, draft action). A verifier checks every dollar amount and transaction ID in the memo against tool outputs and asks the agent to rewrite if any don't match. Visible tool trace. | "What happened and why" → ✓ badge + "tool trace" | `backend/app/agent/` |
 | **Akamai · Cloud AI** | Runs on an Akamai Linode (Docker Compose + Caddy HTTPS). The agent's model is Akamai hosted inference (`hackathon-chat`). The DevRev MCP connector is served from the same box. | Live URL · "AI on Akamai" pill | `deploy/`, `backend/app/agent/agent.py` |
 | **DevRev · Computer** | A combined build: one MCP connector (7 tools: read-only evidence search + an approval-gated follow-up board with idempotency) and a reusable Computer skill that turns customer promises in call transcripts into tracked follow-ups with file, line range and sha256. The owner can also record a promise from the website. Tested end to end in Computer (results in `devrev/README.md`). | ☰ → New / View → "(DevRev)" · DevRev panel under the alert · "Enterprise follow-ups (DevRev)" view | `devrev/`, `backend/app/devrev_board/` |
@@ -97,3 +97,16 @@ cp deploy/.env.example deploy/.env   # DOMAIN, MODEL_PROVIDER, AKAMAI_API_KEY, M
 | `backend/data/` | Transactions and financing options | Julian |
 
 API reference: [`API.md`](API.md). DevRev setup, tools, tests and limits: [`devrev/README.md`](devrev/README.md).
+
+## Known limits
+
+- Synthetic, hand-written data: one business, 19 transactions, no bank or accounting import yet.
+- Financing costs are priced from stated terms; rates marked ASSUMPTION in `levers.json` are not quotes.
+- Safety is judged on daily closing balances over a 7-day window. Order of payments within a day, and
+  repayments after Oct 18 (e.g. the $2,009.21 credit-line repayment on Oct 27), are not modeled yet.
+- The verifier confirms each dollar amount and transaction ID in the memo appears in a tool output; it does
+  not check that each number is used in the right sentence.
+- Approving a draft records the decision; this demo does not send messages or move money.
+- One shared demo state on the server; the public site exposes only the dashboard, `/api/health` and the
+  token-protected `/mcp` connector.
+- DevRev evidence is synthetic transcripts our team wrote for this demo, labeled `"synthetic": true`.
