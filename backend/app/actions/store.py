@@ -30,7 +30,7 @@ class Action(BaseModel):
 
 def _db():
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10, isolation_level=None)   # explicit transactions below
     conn.row_factory = sqlite3.Row
     conn.execute("""CREATE TABLE IF NOT EXISTS actions (
         id TEXT PRIMARY KEY, idempotency_key TEXT UNIQUE NOT NULL, lever_id TEXT NOT NULL,
@@ -45,18 +45,27 @@ def _row(r):
 
 def draft_action(lever_id, action_type, recipient, subject, body, source_txn_ids, scenario="live"):
     key = f"{scenario}:{lever_id}:{','.join(sorted(source_txn_ids)) or '-'}"
-    with _db() as conn:
+    conn = _db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")          # one writer at a time: no duplicate IDs, no duplicate keys
         row = conn.execute("SELECT * FROM actions WHERE idempotency_key = ?", (key,)).fetchone()
         if row:
+            conn.execute("COMMIT")
             return _row(row), False
-        n = conn.execute("SELECT COUNT(*) FROM actions").fetchone()[0]
+        n = conn.execute("SELECT COALESCE(MAX(CAST(SUBSTR(id, 2) AS INTEGER)), 0) FROM actions").fetchone()[0]
         a = Action(id=f"A{n + 1:03d}", idempotency_key=key, lever_id=lever_id, type=action_type,
                    recipient=recipient, subject=subject, body=body, source_txn_ids=source_txn_ids,
                    created_at=datetime.now(timezone.utc).isoformat())
         conn.execute("INSERT INTO actions VALUES (?,?,?,?,?,?,?,?,?,?)",
                      (a.id, a.idempotency_key, a.lever_id, a.type, a.recipient, a.subject, a.body,
                       json.dumps(a.source_txn_ids), a.status, a.created_at))
+        conn.execute("COMMIT")
         return a, True
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    finally:
+        conn.close()
 
 
 def list_actions():

@@ -107,6 +107,7 @@ API reference: [`API.md`](API.md). DevRev setup, tools, tests and limits: [`devr
 - The verifier confirms each dollar amount and transaction ID in the memo appears in a tool output; it does
   not check that each number is used in the right sentence.
 - Approving a draft records the decision; this demo does not send messages or move money.
-- One shared demo state on the server; the public site exposes only the dashboard, `/api/health` and the
-  token-protected `/mcp` connector.
+- The dashboard is a public demo: its buttons (Reset, Simulate, Approve, Delayed Receivable) change one
+  shared state for every visitor. Direct API access is blocked except `/api/health`; `/mcp` needs a token.
+- A restart resets the demo to a clean normal week (no pending approvals); state is not persisted.
 - DevRev evidence is synthetic transcripts our team wrote for this demo, labeled `"synthetic": true`.

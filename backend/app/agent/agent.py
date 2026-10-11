@@ -45,7 +45,9 @@ def make_model():
 
 def build_agent():
     from strands import Agent
-    return Agent(model=make_model(), tools=ALL_TOOLS, system_prompt=SYSTEM_PROMPT, callback_handler=None)
+    from .guardrails import make_hooks
+    return Agent(model=make_model(), tools=ALL_TOOLS, system_prompt=SYSTEM_PROMPT, callback_handler=None,
+                 hooks=make_hooks(get_trace))      # Strands BeforeToolCallEvent guardrails
 
 
 def _money(x):

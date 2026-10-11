@@ -37,3 +37,15 @@ def test_path_escape_and_unapproved_files_blocked(data):
     for bad in ["../etc/passwd", "secret.txt", "transcripts/../secret.txt"]:
         with pytest.raises(ValueError):
             vault.read_evidence(bad)
+
+
+def test_verify_source_checks_files_hashes_and_lines(data):
+    ok = vault.verify_source({"ref": "transcripts/acme_qbr.json", "lines": "1-3"})
+    assert len(ok["sha256"]) == 64                                   # real hash filled in
+    for bad in [{"ref": "transcripts/missing.json"},
+                {"ref": "transcripts/acme_qbr.json", "sha256": "0" * 64},
+                {"ref": "transcripts/acme_qbr.json", "lines": "900-950"}]:
+        with pytest.raises(ValueError):
+            vault.verify_source(bad)
+    assert vault.verify_source({"ref": "MTG-1008-RIDGE"})["ref"] == "MTG-1008-RIDGE"      # record IDs pass
+    assert vault.verify_source({"ref": "owner-note:T08:2026-10-21"})["ref"].startswith("owner-note")

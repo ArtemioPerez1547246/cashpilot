@@ -34,7 +34,8 @@ class Source(BaseModel):
 
 
 def _fields(account, title, sources, details, owner, due_date, requested_by):
-    return dict(account=account, title=title, sources=[s.model_dump() for s in sources], details=details,
+    checked = [vault.verify_source(s.model_dump()) for s in sources]     # no made-up files or hashes
+    return dict(account=account, title=title, sources=checked, details=details,
                 owner=owner, due_date=due_date, requested_by=requested_by)
 
 

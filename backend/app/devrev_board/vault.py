@@ -100,3 +100,22 @@ def read_evidence(path, start_line=1, max_lines=60):
     return {"path": path, "sha256": digest, "start_line": start_line, "end_line": end,
             "total_lines": len(lines), "text": "\n".join(lines[start_line - 1:end]),
             "next_start_line": end + 1 if end < len(lines) else None}
+
+
+def verify_source(src):
+    """A follow-up's source must be real. File references are checked against the evidence files:
+    the file must exist in an approved folder, the sha256 (if given) must match, and the line range
+    (if given) must be inside the file. Record IDs and owner notes are not files and pass through."""
+    import re
+    ref = (src.get("ref") or "").strip()
+    is_file = "/" in ref or ref.lower().endswith(tuple(EXTENSIONS))
+    if not is_file or ref.startswith("owner-note:"):
+        return src
+    digest, lines = read_source(ref)                 # raises if missing, outside the folders, or not mounted
+    given = (src.get("sha256") or "").strip().lower()
+    if given and given != digest:
+        raise ValueError(f"sha256 for {ref} does not match the file; read it again with read_evidence")
+    nums = [int(n) for n in re.findall(r"\d+", src.get("lines") or "")][:2]
+    if nums and not all(1 <= n <= len(lines) for n in nums):
+        raise ValueError(f"lines {src.get('lines')} are outside {ref} (it has {len(lines)} lines)")
+    return {**src, "sha256": digest}

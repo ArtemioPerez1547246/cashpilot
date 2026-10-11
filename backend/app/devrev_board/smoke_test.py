@@ -33,7 +33,7 @@ async def main(url):
             assert not before.isError, before.content
             total = (before.structuredContent or json.loads(before.content[0].text))["total"]
             p = await s.call_tool("preview_follow_up", {"account": "SMOKE TEST", "title": "Smoke test only",
-                                                        "sources": [{"ref": "smoke/none"}]})
+                                                        "sources": [{"ref": "SMOKE-RECORD-1"}]})
             assert not p.isError, p.content
             after = await s.call_tool("list_follow_ups", {})
             assert (after.structuredContent or json.loads(after.content[0].text))["total"] == total
