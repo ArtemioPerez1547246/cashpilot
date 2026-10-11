@@ -425,7 +425,7 @@ def new_promise_dialog():
             st.error(_api_error(e))
 
 
-@st.dialog("Customer promises (DevRev)", width="large")
+@st.dialog("Existing Future Receivables", width="large")
 def view_promises_dialog():
     try:
         items = get("/api/devrev/follow-ups")["follow_ups"]
@@ -488,7 +488,7 @@ def top_bar():
                     with st.container(key="sub-view"):
                         if st.button("Existing expense", key="m-view-exp", width="stretch"):
                             open_dialog("view_expenses")
-                        if st.button("Customer promises (DevRev)", key="m-view-promise", width="stretch"):
+                        if st.button("Existing Future Receivables", key="m-view-promise", width="stretch"):
                             open_dialog("view_promises")
 
 
