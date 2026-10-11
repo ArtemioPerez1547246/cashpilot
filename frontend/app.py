@@ -21,6 +21,7 @@ PAYROLL_DATE = "2026-10-16"            # lowest point gets "(payroll day)" when 
 EVENT_LINE = "Ridgeline’s $4,000 payment is 6 days late."   # TODO: take the amount from the engine
 PROVIDERS = {"akamai": "Akamai", "bedrock": "AWS Bedrock", "openai": "OpenAI"}
 MENU_ITEMS = ["New", "Saved plans", "Settings"]   # placeholders for later
+MEMO_LEFT = ("problem", "cause", "what happened", "why")   # memo sections kept on the left
 
 # ---------- design 05 colors ----------
 TEAL, LIME, INK, MUTED = "#0B5D57", "#C8EF5A", "#10201E", "#3D5753"
@@ -78,9 +79,12 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 .st-key-menu button:hover {{ border-color: {TEAL} !important; color: {TEAL} !important; }}
 
 /* "Try a fix" dropdown button looks like an input box */
-.st-key-fixbox button {{ background: #fff !important; border: 1px solid {LINE} !important;
+.st-key-fixbox [data-testid="stPopover"] > div > button, .st-key-fixbox [data-testid="stPopoverButton"] {{
+  background: #fff !important; border: 1px solid {LINE} !important;
   color: {INK} !important; justify-content: space-between; min-height: 44px; }}
-.st-key-fixbox button:hover {{ border-color: {TEAL} !important; }}
+
+/* memo cards */
+.cp-memo-title {{ font-weight: 800; font-size: 16px; margin-bottom: 4px; color: {INK}; }}
 
 /* page pieces */
 .cp-alert {{ border-radius: 6px; padding: 18px 22px; margin: 10px 0 14px; }}
@@ -178,6 +182,31 @@ def chart(fig):      # theme=None keeps our colors instead of Streamlit's
     st.plotly_chart(fig, width="stretch", theme=None)
 
 
+def split_memo(text):
+    """Split the AI memo into (title, body) pairs at lines like '## Problem' or '**Cause**'."""
+    sections, title, buf = [], None, []
+    for line in clean(text).splitlines():
+        t = line.strip()
+        is_heading = t.startswith("#") or (t.startswith("**") and t.endswith("**") and len(t) > 4)
+        if is_heading:
+            if title or "".join(buf).strip():
+                sections.append((title, "\n".join(buf).strip()))
+            title, buf = t.strip("#* ").rstrip(":"), []
+        else:
+            buf.append(line)
+    if title or "".join(buf).strip():
+        sections.append((title, "\n".join(buf).strip()))
+    return sections
+
+
+def memo_card(title, body):
+    with st.container(border=True):
+        if title:
+            html(f"<div class='cp-memo-title'>{title}</div>")
+        if body:
+            st.markdown(md(body).replace("\n", "  \n"))
+
+
 # ---------- callbacks (run before the refresh, so one click = one change) ----------
 def toggle_menu():
     st.session_state.menu_open = not st.session_state.menu_open
@@ -188,10 +217,15 @@ def pick_menu_item(item):
     st.toast(f"{item} is coming soon.")
 
 
+def apply_fixes(ids):
+    st.session_state.applied_fixes = [lid for lid in ids if st.session_state.get(f"lv-{lid}")]
+
+
 def clear_fixes():
     for k in list(st.session_state.keys()):
         if str(k).startswith("lv-"):
             st.session_state[k] = False
+    st.session_state.applied_fixes = []
 
 
 try:
@@ -204,6 +238,8 @@ if "menu_open" not in st.session_state:
     st.session_state.menu_open = False
 if "data_ver" not in st.session_state:
     st.session_state.data_ver = 0
+if "applied_fixes" not in st.session_state:
+    st.session_state.applied_fixes = []
 
 
 # ---------- top bar: menu, name, demo controls (a fragment: the menu only refreshes this bar) ----------
@@ -300,17 +336,21 @@ def forecast_section(ver, f, reserve):
 
     c_fix, c_plan, c_wait = st.columns(3, gap="medium")
 
-    # ----- try a fix: click the button to open, click again to close -----
+    # ----- try a fix: tick options, then press "Apply changes" -----
     with c_fix:
         st.markdown("### Try a fix")
-        picked = [lid for lid in names if st.session_state.get(f"lv-{lid}")]
-        label = f"{len(picked)} option{'s' if len(picked) != 1 else ''} picked" if picked else "Pick one or more options"
+        picked = [lid for lid in st.session_state.applied_fixes if lid in names]
+        label = (f"{len(picked)} option{'s' if len(picked) != 1 else ''} applied" if picked
+                 else "Pick one or more options")
         with st.container(key="fixbox"):
             with st.popover(label, width="stretch"):
-                for lid, name in names.items():
-                    st.checkbox(name, key=f"lv-{lid}")
-                st.button("Clear", key="clear-fixes", on_click=clear_fixes)
-        picked = [lid for lid in names if st.session_state.get(f"lv-{lid}")]
+                with st.form("fix-form", border=False):
+                    for lid, name in names.items():
+                        st.checkbox(name, key=f"lv-{lid}")
+                    b1, b2 = st.columns(2)
+                    b1.form_submit_button("Apply changes", type="primary", width="stretch",
+                                          on_click=apply_fixes, args=(list(names),))
+                    b2.form_submit_button("Clear", width="stretch", on_click=clear_fixes)
         if picked:
             st.caption("Testing: " + md(", ".join(names[lid] for lid in picked)))
         sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)}) if picked else None
@@ -410,8 +450,9 @@ def forecast_section(ver, f, reserve):
 
 forecast_section(ver, f, reserve)
 
-# ---------- AI analyst + approvals ----------
+# ---------- AI analyst (left) + approvals and plan details (right) ----------
 c_ai, c_ok = st.columns(2, gap="medium")
+right_sections = []
 
 with c_ai:
     st.markdown("### What happened and why")
@@ -430,7 +471,12 @@ with c_ai:
             tools = len({t["tool"] for t in inv["trace"]})
             where = PROVIDERS.get(health["model_provider"], health["model_provider"])
             html(f"{check}<span class='cp-pill' style='background:#EEF2F1'>AI on {where} · {tools} tools used</span>")
-        st.markdown(md(inv["memo"]).replace("\n", "  \n"))
+        sections = split_memo(inv["memo"])
+        for title, body in sections:
+            if not title or title.lower().startswith(MEMO_LEFT):
+                memo_card(title, body)
+            else:
+                right_sections.append((title, body))
         with st.expander("See how the AI worked (tool trace)"):
             for t in inv["trace"]:
                 st.markdown(md(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}"))
@@ -457,6 +503,8 @@ with c_ok:
             else:
                 st.markdown(f"Status: `{a['status']}`")
     st.caption("Nothing is sent without your approval. Approving twice never sends twice.")
+    for title, body in right_sections:     # the rest of the AI memo (cheapest plan, cost of waiting, ...)
+        memo_card(title, body)
 
 # ---------- footer ----------
 html("<div class='cp-footer'>Demo data (synthetic) · Runs on Akamai Cloud · Agent built with Strands</div>")
