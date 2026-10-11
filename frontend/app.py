@@ -597,7 +597,10 @@ RIDGELINE_TEXT = """
 </div>
 """
 if st.session_state.pop("ridgeline_text", False):
-    html(RIDGELINE_TEXT)
+    st.session_state.ridgeline_until = time.time() + 12
+sms_slot = st.empty()        # always on the page (even when empty), so nothing below it shifts
+if time.time() < st.session_state.get("ridgeline_until", 0):
+    sms_slot.markdown(RIDGELINE_TEXT, unsafe_allow_html=True)
 
 # alerts are fetched fresh every time; they decide when cached data must refresh
 alerts = get("/api/alerts")
