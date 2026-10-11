@@ -36,6 +36,6 @@ L01 + L05B for $9.21; decided Oct 14 it costs $124.60; decided Oct 16 there is n
 | POST | `/api/devrev/payment-update/preview` | `{txn, new_date, said_by, channel, quote, customer}` | engine before/after, follow-up draft, `already_recorded`; writes nothing |
 | POST | `/api/devrev/payment-update/apply` | same | moves the payment once (idempotent), creates or reuses the follow-up |
 
-The MCP connector for DevRev Computer is served at `/mcp` (Bearer token): `list_sources`,
-`search_evidence`, `read_evidence`, `list_follow_ups`, `get_follow_up`, `preview_follow_up`,
-`create_follow_up` (needs approval).
+The MCP connector for DevRev Computer is served at `/mcp` (Bearer token): `fc_list_sources`,
+`fc_search_evidence`, `fc_read_evidence`, `fc_list_follow_ups`, `fc_get_follow_up`, `fc_preview_follow_up`,
+`fc_create_follow_up` (needs approval).

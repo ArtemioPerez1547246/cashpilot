@@ -25,13 +25,13 @@ state volume → ForeCash dashboard, view "Enterprise follow-ups (DevRev)".
 ## Tools
 | Tool | What it does | Computer access mode |
 |---|---|---|
-| `list_sources(prefix, offset, limit)` | Evidence files (synthetic transcripts + accounts) | Always allow |
-| `search_evidence(query, prefix, offset, limit)` | Literal search, one hit per file, with sha256 + line | Always allow |
-| `read_evidence(path, start_line, max_lines)` | Bounded read; cite path + sha256 + line range | Always allow |
-| `list_follow_ups(account, status, limit, offset)` | Existing tasks, paged | Always allow |
-| `get_follow_up(follow_up_id)` | One task; used to recover after a timeout | Always allow |
-| `preview_follow_up(account, title, sources[], details, owner, due_date, requested_by)` | Validates and returns exactly what would be created + `idempotency_key` + `duplicate_of`. Writes nothing | Always allow |
-| `create_follow_up(..., idempotency_key)` | Creates once; same key returns the existing task (`created: false`) | **Needs approval** |
+| `fc_list_sources(prefix, offset, limit)` | Evidence files (synthetic transcripts + accounts) | Always allow |
+| `fc_search_evidence(query, prefix, offset, limit)` | Literal search, one hit per file, with sha256 + line | Always allow |
+| `fc_read_evidence(path, start_line, max_lines)` | Bounded read; cite path + sha256 + line range | Always allow |
+| `fc_list_follow_ups(account, status, limit, offset)` | Existing tasks, paged | Always allow |
+| `fc_get_follow_up(follow_up_id)` | One task; used to recover after a timeout | Always allow |
+| `fc_preview_follow_up(account, title, sources[], details, owner, due_date, requested_by)` | Validates and returns exactly what would be created + `idempotency_key` + `duplicate_of`. Writes nothing | Always allow |
+| `fc_create_follow_up(..., idempotency_key)` | Creates once; same key returns the existing task (`created: false`) | **Needs approval** |
 
 Rules enforced server-side: at least one source reference per task; owner and due date are stored
 as "not documented" when the source does not state them; due dates must be `YYYY-MM-DD`;

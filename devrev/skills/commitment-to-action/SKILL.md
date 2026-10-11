@@ -13,16 +13,16 @@ Use only the team's data: the DevRev playground records and the ForeCash connect
 - Reference date: needed only to interpret relative deadlines such as "next Friday". Ask if it matters and is not given.
 
 ## Workflow
-1. Resolve the account: read crm_json_data/accounts.json with read_evidence, and check playground records. If several accounts plausibly match (for example two companies with the same word in the name), list them and ask which one. Note the exact name, account_id and domain.
-2. Call list_follow_ups for the account. If the ForeCash connector is missing or fails, say it is not connected for this user and stop before drafting tasks.
-3. Find evidence with the connector's evidence tools: search_evidence with prefix "transcripts/" for the account name, its short name and its domain; then repeat without the prefix to cover crm, pm, kb and internal docs. Also check native playground records. If search_evidence says the export is not mounted, say so and use native records only.
-4. For each hit, call read_evidence around the hit line (about 20 lines before and after). A snippet alone is not evidence. Confirm the passage is about this account.
+1. Resolve the account: read crm_json_data/accounts.json with fc_read_evidence, and check playground records. If several accounts plausibly match (for example two companies with the same word in the name), list them and ask which one. Note the exact name, account_id and domain.
+2. Call fc_list_follow_ups for the account. If the ForeCash connector is missing or fails, say it is not connected for this user and stop before drafting tasks.
+3. Find evidence with the connector's evidence tools: fc_search_evidence with prefix "transcripts/" for the account name, its short name and its domain; then repeat without the prefix to cover crm, pm, kb and internal docs. Also check native playground records. If fc_search_evidence says the export is not mounted, say so and use native records only.
+4. For each hit, call fc_read_evidence around the hit line (about 20 lines before and after). A snippet alone is not evidence. Confirm the passage is about this account.
 5. Keep only explicit commitments, in either direction: what we promised them ("we will send", "I'll confirm by") and what they promised us ("payment will go out by", "the 21st is firm"). Conditional offers, maybes and "no promises" statements go under Open questions, not tasks.
 6. Draft one follow-up per explicit commitment: a short title that says who owes what (for example "Send allergen list to Ridgeline Corp" or "Ridgeline Corp to pay INV-2041 ($4,000)"), details starting with "We promised" or "They promised", details, owner and due date only if stated (otherwise leave empty so the board records not documented), and a source with ref = the file path or record ID, lines = the start-end range read, sha256 = the hash returned, and a short exact quote.
 7. Skip commitments already on the board and say so.
-8. Call preview_follow_up for each draft. Show a numbered table: title, owner, due date, source ref and lines, quote, duplicate_of.
-9. Ask which numbered items to create. Create only those with create_follow_up, passing the idempotency_key from the preview. If the user declines, create nothing.
-10. If a create call times out or errors, call get_follow_up or list_follow_ups before retrying. Never retry blindly.
+8. Call fc_preview_follow_up for each draft. Show a numbered table: title, owner, due date, source ref and lines, quote, duplicate_of.
+9. Ask which numbered items to create. Create only those with fc_create_follow_up, passing the idempotency_key from the preview. If the user declines, create nothing.
+10. If a create call times out or errors, call fc_get_follow_up or fc_list_follow_ups before retrying. Never retry blindly.
 11. Report created IDs, items already on the board, and open questions.
 
 ## Output format

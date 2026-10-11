@@ -1,7 +1,7 @@
 """ForeCash follow-up board as an MCP server for DevRev Computer (Streamable HTTP + Bearer token).
 
 Run from backend/:   MCP_TOKEN=... python -m app.devrev_board.server
-In Computer set access modes: create_follow_up = Needs approval; the other three = Always allow.
+In Computer set access modes: fc_create_follow_up = Needs approval; the other three = Always allow.
 """
 import hmac
 import os
@@ -39,36 +39,36 @@ def _fields(account, title, sources, details, owner, due_date, requested_by):
                 owner=owner, due_date=due_date, requested_by=requested_by)
 
 
-@mcp.tool(annotations=READ)
+@mcp.tool(name="fc_list_sources", annotations=READ)
 def list_sources(prefix: str = "", offset: int = 0, limit: int = 20) -> dict:
     """List the evidence files (synthetic, team-authored) (folders: transcripts/, crm_json_data/, pm_json_data/,
     maple_kb/, internal_docs/). Filter with prefix, e.g. 'transcripts/'. Page with next_offset."""
     return vault.list_sources(prefix, offset, limit)
 
 
-@mcp.tool(annotations=READ)
+@mcp.tool(name="fc_search_evidence", annotations=READ)
 def search_evidence(query: str, prefix: str = "", offset: int = 0, limit: int = 10) -> dict:
     """Literal, case-insensitive substring search over the export (NOT semantic). One hit per file.
     Use account names/IDs and promise phrases ("we will", "by Friday"); narrow with prefix.
-    Always read_evidence around a hit before treating it as a commitment."""
+    Always fc_read_evidence around a hit before treating it as a commitment."""
     return vault.search_evidence(query, prefix, offset, limit)
 
 
-@mcp.tool(annotations=READ)
+@mcp.tool(name="fc_read_evidence", annotations=READ)
 def read_evidence(path: str, start_line: int = 1, max_lines: int = 60) -> dict:
     """Read a bounded window of one export file. Cite path + sha256 + start_line-end_line as the
     follow-up's source (ref = path, lines = 'start-end', sha256 = sha256)."""
     return vault.read_evidence(path, start_line, max_lines)
 
 
-@mcp.tool(annotations=READ)
+@mcp.tool(name="fc_list_follow_ups", annotations=READ)
 def list_follow_ups(account: str = "", status: str = "", limit: int = 20, offset: int = 0) -> dict:
     """List follow-ups already on the board, newest first. Filter by account (substring) and
     status (open|done). Call this before proposing new tasks to avoid duplicates."""
     return store.list_follow_ups(account, status, limit, offset)
 
 
-@mcp.tool(annotations=READ)
+@mcp.tool(name="fc_get_follow_up", annotations=READ)
 def get_follow_up(follow_up_id: str) -> dict:
     """Read one follow-up by ID (e.g. F001). Use after an uncertain create to check the result."""
     f = store.get(follow_up_id)
@@ -77,7 +77,7 @@ def get_follow_up(follow_up_id: str) -> dict:
     return f
 
 
-@mcp.tool(annotations=READ)
+@mcp.tool(name="fc_preview_follow_up", annotations=READ)
 def preview_follow_up(account: str, title: str, sources: list[Source], details: str = "", owner: str = "",
                       due_date: str = "", requested_by: str = "") -> dict:
     """Validate a proposed follow-up and return exactly what would be created, its idempotency_key,
@@ -86,13 +86,13 @@ def preview_follow_up(account: str, title: str, sources: list[Source], details: 
     return store.preview(**_fields(account, title, sources, details, owner, due_date, requested_by))
 
 
-@mcp.tool(annotations=WRITE)
+@mcp.tool(name="fc_create_follow_up", annotations=WRITE)
 def create_follow_up(account: str, title: str, sources: list[Source], idempotency_key: str, details: str = "",
                      owner: str = "", due_date: str = "", requested_by: str = "") -> dict:
     """Create a follow-up on the board ONLY after the user approved the preview. Pass the
-    idempotency_key from preview_follow_up. Repeating the call returns the existing task
-    (created=false) instead of a duplicate. After a timeout, call get_follow_up or
-    list_follow_ups before retrying."""
+    idempotency_key from fc_preview_follow_up. Repeating the call returns the existing task
+    (created=false) instead of a duplicate. After a timeout, call fc_get_follow_up or
+    fc_list_follow_ups before retrying."""
     return store.create(idempotency_key=idempotency_key,
                         **_fields(account, title, sources, details, owner, due_date, requested_by))
 
