@@ -500,12 +500,13 @@ def devrev_commitments_panel():
         incoming = [t for t in get("/api/transactions") if t["direction"] == "in"]
     except Exception:
         return
-    hits = [(t, f) for t in incoming for f in items if f["account"].lower() in t["description"].lower()]
+    hits = [(t, f) for t in incoming for f in items
+            if f["account"].lower() in t["description"].lower() and t["date"][:10] == f["due_date"][:10]]
     if not hits:
         return
     esc = lambda x: str(x).replace("$", r"\$")
     with st.container(border=True):
-        st.markdown("**🔎 From DevRev: what customers said about money you're expecting**")
+        st.markdown("**🔎 Why this payment moved: what the customer told you (from DevRev)**")
         for t, f in hits:
             st.markdown(f"**{t['id']}** {esc(t['description'])}  \n"
                         f"→ **{f['id']} · {esc(f['title'])}** · due {f['due_date']} · owner {f['owner']}")
