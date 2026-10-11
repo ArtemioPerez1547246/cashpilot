@@ -107,6 +107,10 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 [class*="st-key-bin-"] button:hover {{ background: #FCE4E2 !important; color: {RED} !important; }}
 [class*="st-key-pen-"] button *, [class*="st-key-bin-"] button * {{ color: inherit !important; font-size: 22px !important; }}
 
+/* edit ticket / delete warning that open inside the expense list, under the row you clicked */
+[class*="st-key-exp-edit-"] {{ background: #fff; border: 2px solid {TEAL}; border-radius: 10px; padding: 14px 16px; }}
+[class*="st-key-exp-del-"] {{ background: #FFF6F5; border: 2px solid {RED}; border-radius: 10px; padding: 14px 16px; }}
+
 /* red "Yes, delete" button in the warning */
 [class*="st-key-yesdel"] button {{ color: #fff !important; background: {RED} !important; border: 0 !important; }}
 [class*="st-key-yesdel"] button p {{ color: #fff !important; }}
@@ -281,13 +285,48 @@ def forget(prefix):  # wipe a ticket's typed values so it opens fresh next time
             del st.session_state[k]
 
 
+# expense list: the edit ticket / delete warning open inside the list, under the clicked row
+def exp_open(mode, i):
+    old = st.session_state.get("exp_mode")
+    if old and old[0] == "edit":
+        forget(f"edit{old[1]}")
+    st.session_state.exp_mode = (mode, i)
+    st.session_state.pop("exp_err", None)
+
+
+def exp_close(prefix=None):
+    st.session_state.exp_mode = None
+    st.session_state.pop("exp_err", None)
+    if prefix:
+        forget(prefix)
+
+
+def exp_save(i):
+    prefix = f"edit{i}"
+    name = str(st.session_state.get(f"{prefix}-name", "")).strip()
+    cost = st.session_state.get(f"{prefix}-cost", 0.0) or 0.0
+    when = st.session_state.get(f"{prefix}-date")
+    if not name or cost <= 0:
+        st.session_state.exp_err = "Add a name and a cost above $0."
+        return
+    st.session_state.expenses[i] = {"name": name, "cost": cost, "date": when}
+    exp_close(prefix)
+    st.toast("Changes saved.")
+
+
+def exp_delete(i):
+    st.session_state.expenses.pop(i)
+    exp_close()
+    st.toast("Expense deleted.")
+
+
 try:
     health = get("/api/health")
 except Exception as exc:
     st.error(f"Backend not reachable at {API}: {exc}")
     st.stop()
 
-for key, default in [("menu_open", False), ("submenu", None), ("data_ver", 0),
+for key, default in [("menu_open", False), ("submenu", None), ("data_ver", 0), ("exp_mode", None),
                      ("applied_fixes", []), ("expenses", [dict(e) for e in SAMPLE_EXPENSES])]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -326,56 +365,10 @@ def new_expense_dialog():
             st.rerun()
 
 
-@st.dialog("Edit expense")
-def edit_expense_dialog(idx):
-    exps = st.session_state.expenses
-    if idx is None or idx >= len(exps):
-        st.caption("That expense no longer exists.")
-        return
-    prefix = f"edit{idx}"
-    name, cost, when = expense_fields(prefix, exps[idx])
-    left, _, right = st.columns([1, 1.2, 1])
-    cancel = left.button("Cancel", key=f"{prefix}-cancel", width="stretch")
-    save = right.button("Save changes", key=f"{prefix}-save", type="primary", width="stretch")
-    if cancel:
-        forget(prefix)
-        st.session_state.dialog = "view_expenses"     # back to the list
-        st.rerun()
-    if save:
-        if not name or cost <= 0:
-            st.error("Add a name and a cost above $0.")
-        else:
-            exps[idx] = {"name": name, "cost": cost, "date": when}
-            forget(prefix)
-            st.session_state.toast_msg = "Changes saved."
-            st.session_state.dialog = "view_expenses"
-            st.rerun()
-
-
-@st.dialog("Delete expense?")
-def delete_expense_dialog(idx):
-    exps = st.session_state.expenses
-    if idx is None or idx >= len(exps):
-        st.caption("That expense no longer exists.")
-        return
-    e = exps[idx]
-    st.markdown(f"Are you sure you want to delete **{md(e['name'])}** "
-                f"({md(cents(e['cost']))}, {full_date(e['date'])})?")
-    st.caption("This removes the expense from the list.")
-    left, _, right = st.columns([1, 1.2, 1])
-    if left.button("Cancel", key="del-cancel", width="stretch"):
-        st.session_state.dialog = "view_expenses"     # back to the list
-        st.rerun()
-    if right.button("Yes, delete", key="yesdel-confirm", width="stretch"):
-        exps.pop(idx)
-        st.session_state.toast_msg = "Expense deleted."
-        st.session_state.dialog = "view_expenses"
-        st.rerun()
-
-
 @st.dialog("Existing expenses", width="large")
 def view_expenses_dialog():
     exps = st.session_state.expenses
+    mode = st.session_state.get("exp_mode")
     cols = [3, 1.5, 2, 0.45, 0.45]
     if not exps:
         st.caption("No expenses yet. Add one from ☰ → New → Expense.")
@@ -390,18 +383,40 @@ def view_expenses_dialog():
                 c1.markdown(f"**{md(e['name'])}**")
                 c2.markdown(md(cents(e["cost"])))
                 c3.markdown(full_date(e["date"]))
-                if c4.button(":material/edit:", key=f"pen-{i}", type="tertiary", help="Edit"):
-                    st.session_state.edit_idx = i
-                    st.session_state.dialog = "edit_expense"
-                    st.rerun()
-                if c5.button(":material/delete:", key=f"bin-{i}", type="tertiary", help="Delete"):
-                    st.session_state.del_idx = i
-                    st.session_state.dialog = "delete_expense"
-                    st.rerun()
+                c4.button(":material/edit:", key=f"pen-{i}", type="tertiary", help="Edit",
+                          on_click=exp_open, args=("edit", i))
+                c5.button(":material/delete:", key=f"bin-{i}", type="tertiary", help="Delete",
+                          on_click=exp_open, args=("delete", i))
+
+            # ----- edit ticket, opened under this row (the list stays on screen) -----
+            if mode == ("edit", i):
+                prefix = f"edit{i}"
+                with st.container(key=f"exp-edit-{i}"):
+                    st.markdown("**Edit expense**")
+                    expense_fields(prefix, e)
+                    if st.session_state.get("exp_err"):
+                        st.error(st.session_state.exp_err)
+                    left, _, right = st.columns([1, 1.2, 1])
+                    left.button("Cancel", key=f"{prefix}-cancel", width="stretch",
+                                on_click=exp_close, args=(prefix,))
+                    right.button("Save changes", key=f"{prefix}-save", type="primary", width="stretch",
+                                 on_click=exp_save, args=(i,))
+
+            # ----- delete warning, opened under this row -----
+            if mode == ("delete", i):
+                with st.container(key=f"exp-del-{i}"):
+                    st.markdown(f"**Delete {md(e['name'])}?** Are you sure? "
+                                f"({md(cents(e['cost']))}, {full_date(e['date'])})")
+                    st.caption("This removes the expense from the list.")
+                    left, _, right = st.columns([1, 1.2, 1])
+                    left.button("Cancel", key=f"nodel-{i}", width="stretch", on_click=exp_close)
+                    right.button("Yes, delete", key=f"yesdel-{i}", width="stretch",
+                                 on_click=exp_delete, args=(i,))
     if PREVIEW_NOTE:
         st.caption(PREVIEW_NOTE)
     _, right = st.columns([3, 1])
     if right.button("Done", type="primary", key="view-done", width="stretch"):
+        exp_close()
         st.rerun()
 
 
@@ -570,13 +585,10 @@ dlg = st.session_state.pop("dialog", None)
 if dlg == "new_expense":
     new_expense_dialog()
 elif dlg == "view_expenses":
+    exp_close()                      # always open the list with no ticket/warning showing
     view_expenses_dialog()
-elif dlg == "edit_expense":
-    edit_expense_dialog(st.session_state.get("edit_idx"))
 elif dlg == "fix":
     fix_dialog()
-elif dlg == "delete_expense":
-    delete_expense_dialog(st.session_state.get("del_idx"))
 elif dlg == "new_promise":
     new_promise_dialog()
 elif dlg == "view_promises":
@@ -672,7 +684,7 @@ if view != "ForeCash":
 
 # ---------- header ----------
 h1, h2 = st.columns([3, 2], vertical_alignment="bottom")
-h1.markdown(f"<h1 style='margin:0;font-size:38px'>{BUSINESS} · ForeCash</h1>"
+h1.markdown(f"<h1 style='margin:0;font-size:38px'>{BUSINESS}</h1>"
             f"<div style='color:{MUTED}'>Find the cheapest way through a cash crunch, and what it costs to wait.</div>",
             unsafe_allow_html=True)
 h2.markdown(f"<div style='text-align:right;font-weight:600'>Cash forecast {day_long(days[0]['date'])} – "
