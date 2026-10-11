@@ -488,6 +488,33 @@ def forecast_section(ver, f, reserve):
 
 forecast_section(ver, f, reserve)
 
+# ---------- DevRev: what customers said about money you're expecting ----------
+def devrev_commitments_panel():
+    """Open DevRev follow-ups whose account appears in an incoming payment. Read-only."""
+    import os
+    try:
+        items = get("/api/devrev/follow-ups", status="open")["follow_ups"]
+        incoming = [t for t in get("/api/transactions") if t["direction"] == "in"]
+    except Exception:
+        return
+    hits = [(t, f) for t in incoming for f in items if f["account"].lower() in t["description"].lower()]
+    if not hits:
+        return
+    esc = lambda x: str(x).replace("$", r"\$")
+    with st.container(border=True):
+        st.markdown("**🔎 From DevRev: what customers said about money you're expecting**")
+        for t, f in hits:
+            st.markdown(f"**{t['id']}** {esc(t['description'])}  \n"
+                        f"→ **{f['id']} · {esc(f['title'])}** · due {f['due_date']} · owner {f['owner']}")
+            for s_ in f["sources"]:
+                st.caption(f"📎 `{s_['ref']}`" + (f" lines {s_['lines']}" if s_["lines"] else "")
+                           + (f" — “{esc(s_['quote'])}”" if s_["quote"] else ""))
+        st.caption("Found in call transcripts by DevRev Computer and approved by the owner. Read-only here.")
+        st.link_button("Open DevRev Computer", os.getenv("DEVREV_URL", "https://app.devrev.ai"))
+
+
+devrev_commitments_panel()
+
 # ---------- AI analyst (left) + approvals and plan details (right) ----------
 c_ai, c_ok = st.columns(2, gap="medium")
 right_sections = []
