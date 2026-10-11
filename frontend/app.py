@@ -20,17 +20,8 @@ OLD_NAMES = ["Paletería El Sol (demo)", "Paletería El Sol", "PaleterÃ\u00ada 
 PAYROLL_DATE = "2026-10-16"            # lowest point gets "(payroll day)" when it lands here
 EVENT_LINE = "Ridgeline’s $4,000 payment is 6 days late."   # TODO: take the amount from the engine
 PROVIDERS = {"akamai": "Akamai", "bedrock": "AWS Bedrock", "openai": "OpenAI"}
+MENU_ITEMS = ["New", "Saved plans", "Settings"]   # placeholders for later
 MEMO_LEFT = ("problem", "cause", "what happened", "why")   # memo sections kept on the left
-EXTRA_MENU_ITEMS = ["Saved plans", "Settings"]             # placeholders for later
-
-# Dataset preview (front end only: saved in this browser session, does not change the forecast)
-PREVIEW_NOTE = "Preview only: saved for this session. It doesn’t change the forecast yet."
-SAMPLE_EXPENSES = [
-    {"name": "Display freezer upgrade", "cost": 2500.00, "date": date(2026, 10, 15)},
-    {"name": "Biweekly payroll", "cost": 8400.00, "date": date(2026, 10, 16)},
-    {"name": "Dairy supply order", "cost": 2100.00, "date": date(2026, 10, 16)},
-    {"name": "Sales tax", "cost": 900.00, "date": date(2026, 10, 16)},
-]
 
 # ---------- design 05 colors ----------
 TEAL, LIME, INK, MUTED = "#0B5D57", "#C8EF5A", "#10201E", "#3D5753"
@@ -78,21 +69,14 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 .st-key-topbar [data-testid="stBaseButton-primary"] p, .st-key-topbar button[kind="primary"] p {{ color: {INK} !important; }}
 
 /* dropdown menu: hangs under the top bar, floats over the page, scrolls with it */
-.st-key-menu {{ position: absolute; top: calc(100% + 8px); left: 0; width: 290px; z-index: 1001;
+.st-key-menu {{ position: absolute; top: calc(100% + 8px); left: 0; width: 260px; z-index: 1001;
   background: #fff; border-radius: 8px; padding: 16px 12px;
   box-shadow: 0 12px 32px rgba(16, 32, 30, 0.25); }}
-.st-key-menu p {{ font-weight: 700; color: {INK} !important; font-size: 15px !important; margin: 0; }}
+.st-key-menu p {{ font-weight: 800; color: {INK} !important; font-size: 16px; margin: 0 0 6px; }}
 .st-key-menu button, .st-key-menu [data-testid="stBaseButton-secondary"] {{
   justify-content: flex-start; background: #fff !important; color: {INK} !important;
   border: 1px solid #D5E2DF !important; }}
 .st-key-menu button:hover {{ border-color: {TEAL} !important; color: {TEAL} !important; }}
-.st-key-sub-new, .st-key-sub-view {{ margin-left: 10px; padding-left: 10px; border-left: 2px solid #D5E2DF; }}
-.st-key-sub-new p, .st-key-sub-view p {{ font-weight: 600; font-size: 14px !important; }}
-
-/* delete buttons in the edit ticket: red */
-[class*="-delete"] button {{ color: {RED} !important; border: 1px solid {RED} !important; background: #fff !important; }}
-[class*="-yesdel"] button {{ color: #fff !important; background: {RED} !important; border: 0 !important; }}
-[class*="-yesdel"] button p, [class*="-delete"] button p {{ color: inherit !important; }}
 
 /* "Try a fix" dropdown button looks like an input box */
 .st-key-fixbox [data-testid="stPopover"] > div > button, .st-key-fixbox [data-testid="stPopoverButton"] {{
@@ -115,7 +99,6 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 .cp-callout {{ background: #FFE58F; border-radius: 6px; padding: 16px; font-size: 17px; line-height: 1.45; }}
 .cp-pill {{ display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 13px; margin: 0 6px 8px 0; }}
 .cp-footer {{ background: {TEAL}; color: #E6F2F0; text-align: center; font-size: 13px; padding: 14px; border-radius: 6px; margin-top: 18px; }}
-.cp-colhead {{ font-size: 12px; color: {MUTED}; font-weight: 600; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -170,10 +153,6 @@ def day_short(s):    # "Mon 12"  (no %-d: it breaks on Windows)
 def day_long(s):     # "Fri Oct 16"
     d = as_date(s)
     return f"{d:%a %b} {d.day}"
-
-
-def full_date(d):    # date object -> "Fri Oct 16, 2026"
-    return f"{d:%a %b} {d.day}, {d.year}"
 
 
 def payroll_tag(s):
@@ -231,29 +210,11 @@ def memo_card(title, body):
 # ---------- callbacks (run before the refresh, so one click = one change) ----------
 def toggle_menu():
     st.session_state.menu_open = not st.session_state.menu_open
-    st.session_state.submenu = None
 
 
-def toggle_submenu(name):
-    st.session_state.submenu = None if st.session_state.submenu == name else name
-
-
-def coming_soon(item):
+def pick_menu_item(item):
     st.session_state.menu_open = False
-    st.session_state.submenu = None
     st.toast(f"{item} is coming soon.")
-
-
-def open_dialog(name):
-    """Close the menu and open a pop-up window (needs a full refresh, so it ends with st.rerun)."""
-    st.session_state.dialog = name
-    st.session_state.menu_open = False
-    st.session_state.submenu = None
-    st.rerun()
-
-
-def set_flag(key, value):
-    st.session_state[key] = value
 
 
 def apply_fixes(ids):
@@ -267,130 +228,18 @@ def clear_fixes():
     st.session_state.applied_fixes = []
 
 
-def forget(prefix):  # wipe a ticket's typed values so it opens fresh next time
-    for k in list(st.session_state.keys()):
-        if str(k).startswith(prefix + "-"):
-            del st.session_state[k]
-
-
 try:
     health = get("/api/health")
 except Exception as exc:
     st.error(f"Backend not reachable at {API}: {exc}")
     st.stop()
 
-for key, default in [("menu_open", False), ("submenu", None), ("data_ver", 0),
-                     ("applied_fixes", []), ("expenses", [dict(e) for e in SAMPLE_EXPENSES])]:
-    if key not in st.session_state:
-        st.session_state[key] = default
-
-
-# ---------- expense ticket + list (pop-up windows) ----------
-def expense_fields(prefix, existing=None):
-    e = existing or {}
-    name = st.text_input("Name", value=e.get("name", ""), key=f"{prefix}-name",
-                         placeholder="Who you’re paying, e.g. Dairy supplier")
-    cost = st.number_input("Cost ($)", min_value=0.0, step=10.0, format="%.2f",
-                           value=float(e.get("cost", 0.0)), key=f"{prefix}-cost")
-    when = st.date_input("Date", value=e.get("date", date.today()), format="MM/DD/YYYY",
-                         key=f"{prefix}-date")
-    if PREVIEW_NOTE:
-        st.caption(PREVIEW_NOTE)
-    return name.strip(), cost, when
-
-
-@st.dialog("New expense")
-def new_expense_dialog():
-    name, cost, when = expense_fields("new")
-    left, _, right = st.columns([1, 1.2, 1])
-    cancel = left.button("Cancel", key="new-cancel", width="stretch")
-    save = right.button("Save changes", key="new-save", type="primary", width="stretch")
-    if cancel:
-        forget("new")
-        st.rerun()
-    if save:
-        if not name or cost <= 0:
-            st.error("Add a name and a cost above $0.")
-        else:
-            st.session_state.expenses.append({"name": name, "cost": cost, "date": when})
-            forget("new")
-            st.session_state.toast_msg = "Expense saved."
-            st.rerun()
-
-
-@st.dialog("Edit expense")
-def edit_expense_dialog(idx):
-    exps = st.session_state.expenses
-    if idx is None or idx >= len(exps):
-        st.caption("That expense no longer exists.")
-        return
-    e = exps[idx]
-    prefix = f"edit{idx}"
-    confirm_key = f"{prefix}-confirm"
-    name, cost, when = expense_fields(prefix, e)
-
-    # ----- "are you sure?" step -----
-    if st.session_state.get(confirm_key):
-        with st.container(border=True):
-            st.markdown(f"**Delete “{md(e['name'])}”?** Are you sure?")
-            st.caption("This removes the expense from the list.")
-            c_no, _, c_yes = st.columns([1, 1.2, 1])
-            c_no.button("Cancel", key=f"{prefix}-nodel", width="stretch",
-                        on_click=set_flag, args=(confirm_key, False))     # back to the ticket
-            if c_yes.button("Yes", key=f"{prefix}-yesdel", width="stretch"):
-                exps.pop(idx)
-                forget(prefix)
-                st.session_state.toast_msg = "Expense deleted."
-                st.session_state.dialog = "view_expenses"                # back to the list
-                st.rerun()
-        return
-
-    # ----- normal ticket buttons: Cancel + Delete on the left, Save on the right -----
-    c_cancel, c_delete, _, c_save = st.columns([1, 1, 0.3, 1.3])
-    cancel = c_cancel.button("Cancel", key=f"{prefix}-cancel", width="stretch")
-    c_delete.button("Delete", key=f"{prefix}-delete", width="stretch",
-                    on_click=set_flag, args=(confirm_key, True))
-    save = c_save.button("Save changes", key=f"{prefix}-save", type="primary", width="stretch")
-    if cancel:
-        forget(prefix)
-        st.session_state.dialog = "view_expenses"     # back to the list
-        st.rerun()
-    if save:
-        if not name or cost <= 0:
-            st.error("Add a name and a cost above $0.")
-        else:
-            exps[idx] = {"name": name, "cost": cost, "date": when}
-            forget(prefix)
-            st.session_state.toast_msg = "Changes saved."
-            st.session_state.dialog = "view_expenses"
-            st.rerun()
-
-
-@st.dialog("Existing expenses", width="large")
-def view_expenses_dialog():
-    exps = st.session_state.expenses
-    if not exps:
-        st.caption("No expenses yet. Add one from ☰ → New → New expense.")
-    else:
-        h1, h2, h3, _ = st.columns([3, 1.5, 2, 1])
-        h1.markdown("<div class='cp-colhead'>Name</div>", unsafe_allow_html=True)
-        h2.markdown("<div class='cp-colhead'>Cost</div>", unsafe_allow_html=True)
-        h3.markdown("<div class='cp-colhead'>Date</div>", unsafe_allow_html=True)
-        for i, e in enumerate(exps):
-            with st.container(border=True):
-                c1, c2, c3, c4 = st.columns([3, 1.5, 2, 1], vertical_alignment="center")
-                c1.markdown(f"**{md(e['name'])}**")
-                c2.markdown(md(cents(e["cost"])))
-                c3.markdown(full_date(e["date"]))
-                if c4.button("Edit", key=f"edit-btn-{i}", width="stretch"):
-                    st.session_state.edit_idx = i
-                    st.session_state.dialog = "edit_expense"
-                    st.rerun()
-    if PREVIEW_NOTE:
-        st.caption(PREVIEW_NOTE)
-    _, right = st.columns([3, 1])
-    if right.button("Done", type="primary", key="view-done", width="stretch"):
-        st.rerun()
+if "menu_open" not in st.session_state:
+    st.session_state.menu_open = False
+if "data_ver" not in st.session_state:
+    st.session_state.data_ver = 0
+if "applied_fixes" not in st.session_state:
+    st.session_state.applied_fixes = []
 
 
 # ---------- top bar: menu, name, demo controls (a fragment: the menu only refreshes this bar) ----------
@@ -413,44 +262,14 @@ def top_bar():
             clear_fixes()
             st.rerun()
         if st.session_state.menu_open:
-            sub = st.session_state.submenu
             with st.container(key="menu"):
-                # New
-                st.button(("▾ " if sub == "new" else "▸ ") + "New", key="m-new",
-                          width="stretch", on_click=toggle_submenu, args=("new",))
-                if sub == "new":
-                    with st.container(key="sub-new"):
-                        st.button("New accounts receivable", key="m-new-ar", width="stretch")   # button only
-                        if st.button("New expense", key="m-new-exp", width="stretch"):
-                            open_dialog("new_expense")
-                # View
-                st.button(("▾ " if sub == "view" else "▸ ") + "View", key="m-view",
-                          width="stretch", on_click=toggle_submenu, args=("view",))
-                if sub == "view":
-                    with st.container(key="sub-view"):
-                        st.button("Existing accounts receivable", key="m-view-ar", width="stretch")   # button only
-                        if st.button("Existing expense", key="m-view-exp", width="stretch"):
-                            open_dialog("view_expenses")
-                # the earlier placeholders
-                for item in EXTRA_MENU_ITEMS:
-                    st.button(item, key=f"m-{item}", width="stretch",
-                              on_click=coming_soon, args=(item,))
+                st.markdown("Menu")
+                for item in MENU_ITEMS:
+                    st.button(item, key=f"menu-{item}", width="stretch",
+                              on_click=pick_menu_item, args=(item,))
 
 
 top_bar()
-
-# open whichever pop-up the menu asked for (pop = it only opens once)
-dlg = st.session_state.pop("dialog", None)
-if dlg == "new_expense":
-    new_expense_dialog()
-elif dlg == "view_expenses":
-    view_expenses_dialog()
-elif dlg == "edit_expense":
-    edit_expense_dialog(st.session_state.get("edit_idx"))
-
-msg = st.session_state.pop("toast_msg", None)
-if msg:
-    st.toast(msg)
 
 # alerts are fetched fresh every time; they decide when cached data must refresh
 alerts = get("/api/alerts")
@@ -461,6 +280,47 @@ ov = cget("/api/overview", ver, scenario=SCENARIO)
 s, f = ov["settings"], ov["forecast"]
 days = f["days"]
 reserve = s["min_reserve"]
+
+# ---------- view switch: CashPilot vs. DevRev follow-up board ----------
+view = st.radio("View", ["CashPilot", "Enterprise follow-ups (DevRev)"], horizontal=True, label_visibility="collapsed")
+
+if view != "CashPilot":
+    st.title("Enterprise follow-ups (DevRev)")
+    st.caption("Created by DevRev Computer through our MCP connector, after the user approved each preview. "
+               "Evidence: synthetic call transcripts written for this demo (DevRev confirmed teams may load their own data). "
+               "Open follow-ups about incoming payments also appear on the CashPilot page.")
+    if st.button("Refresh"):
+        st.rerun()
+    acct = st.text_input("Filter by account", "")
+    data = get("/api/devrev/follow-ups", account=acct)
+    items = data["follow_ups"]
+    m = st.columns(3)
+    m[0].metric("Follow-ups", data["total"])
+    m[1].metric("Open", sum(1 for f in items if f["status"] == "open"))
+    m[2].metric("Duplicates blocked", sum(f["repeat_attempts"] for f in items))
+    if not items:
+        st.info("No follow-ups yet. In DevRev Computer, ask the commitment-to-action skill to review an account.")
+    for f in items:
+        with st.container(border=True):
+            badge = "🟢 open" if f["status"] == "open" else "✅ done"
+            st.write(f"**{f['id']} · " + f['title'].replace('$', r'\$') + f"** · {f['account']} · {badge}")
+            st.caption(f"Owner: {f['owner']} · Due: {f['due_date']} · Requested via DevRev Computer "
+                       f"· created {f['created_at'][:16].replace('T', ' ')} UTC"
+                       + (f" · repeat runs blocked: {f['repeat_attempts']}" if f["repeat_attempts"] else ""))
+            if f["details"]:
+                st.write(f["details"].replace("$", r"\$"))
+            for s_ in f["sources"]:
+                loc = " · ".join(x for x in [s_["lines"] and f"lines {s_['lines']}",
+                                             s_["sha256"] and f"sha256 {s_['sha256'][:12]}…"] if x)
+                st.caption(f"📎 Source: `{s_['ref']}`" + (f" ({loc})" if loc else "")
+                           + (f" — “{s_['quote']}”" if s_["quote"] else ""))
+            if f["status"] == "open" and st.button("Mark done", key=f"done-{f['id']}"):
+                post(f"/api/devrev/follow-ups/{f['id']}/status?status=done")
+                st.rerun()
+            if f["status"] == "done" and st.button("Reopen", key=f"reopen-{f['id']}"):
+                post(f"/api/devrev/follow-ups/{f['id']}/status?status=open")
+                st.rerun()
+    st.stop()
 
 # ---------- header ----------
 h1, h2 = st.columns([3, 2], vertical_alignment="bottom")
@@ -630,6 +490,33 @@ def forecast_section(ver, f, reserve):
 
 
 forecast_section(ver, f, reserve)
+
+# ---------- DevRev: what customers said about money you're expecting ----------
+def devrev_commitments_panel():
+    """Open DevRev follow-ups whose account appears in an incoming payment. Read-only."""
+    import os
+    try:
+        items = get("/api/devrev/follow-ups", status="open")["follow_ups"]
+        incoming = [t for t in get("/api/transactions") if t["direction"] == "in"]
+    except Exception:
+        return
+    hits = [(t, f) for t in incoming for f in items if f["account"].lower() in t["description"].lower()]
+    if not hits:
+        return
+    esc = lambda x: str(x).replace("$", r"\$")
+    with st.container(border=True):
+        st.markdown("**🔎 From DevRev: what customers said about money you're expecting**")
+        for t, f in hits:
+            st.markdown(f"**{t['id']}** {esc(t['description'])}  \n"
+                        f"→ **{f['id']} · {esc(f['title'])}** · due {f['due_date']} · owner {f['owner']}")
+            for s_ in f["sources"]:
+                st.caption(f"📎 `{s_['ref']}`" + (f" lines {s_['lines']}" if s_["lines"] else "")
+                           + (f" — “{esc(s_['quote'])}”" if s_["quote"] else ""))
+        st.caption("Found in call transcripts by DevRev Computer and approved by the owner. Read-only here.")
+        st.link_button("Open DevRev Computer", os.getenv("DEVREV_URL", "https://app.devrev.ai"))
+
+
+devrev_commitments_panel()
 
 # ---------- AI analyst (left) + approvals and plan details (right) ----------
 c_ai, c_ok = st.columns(2, gap="medium")
