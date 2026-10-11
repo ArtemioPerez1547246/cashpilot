@@ -472,7 +472,7 @@ def view_promises_dialog():
         st.error(_api_error(e))
         return
     if not items:
-        st.caption("Nothing tracked yet. Record one from ☰ → New → Late Receivable.")
+        st.caption("Nothing tracked yet. Record one from ☰ → New → Delayed Receivable.")
     for f_ in items:
         with st.container(border=True):
             badge = "🟢 open" if f_["status"] == "open" else "✅ done"
@@ -516,9 +516,9 @@ def top_bar():
                           width="stretch", on_click=toggle_submenu, args=("new",))
                 if sub == "new":
                     with st.container(key="sub-new"):
-                        if st.button("New expense", key="m-new-exp", width="stretch"):
+                        if st.button("Expense", key="m-new-exp", width="stretch"):
                             open_dialog("new_expense")
-                        if st.button("Late Receivable", key="m-new-promise", width="stretch"):
+                        if st.button("Delayed Receivable", key="m-new-promise", width="stretch"):
                             open_dialog("new_promise")
                 # View
                 st.button(("▾ " if sub == "view" else "▸ ") + "View", key="m-view",
