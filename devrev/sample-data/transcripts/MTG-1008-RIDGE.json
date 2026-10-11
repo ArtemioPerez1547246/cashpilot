@@ -1,0 +1,55 @@
+{
+  "synthetic": true,
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "meeting_id": "MTG-1008-RIDGE",
+  "date": "2026-10-08",
+  "account": "Ridgeline Corp",
+  "account_id": "ACC-RIDGE-CORP",
+  "title": "INV-2041 payment check-in",
+  "attendees": [
+    "Marisol Vega (Paleteria El Sol, owner)",
+    "Luis Pardo (Ridgeline Corp, accounts payable)"
+  ],
+  "transcript": [
+    {
+      "t": "00:00",
+      "speaker": "Marisol Vega",
+      "text": "Hi Luis, just checking that INV-2041 is still on track for October 15."
+    },
+    {
+      "t": "00:14",
+      "speaker": "Luis Pardo",
+      "text": "I was about to email you. Our payment run moved because of the quarter close."
+    },
+    {
+      "t": "00:30",
+      "speaker": "Luis Pardo",
+      "text": "INV-2041 will be paid on October 21 instead. I'm sorry about the delay."
+    },
+    {
+      "t": "00:48",
+      "speaker": "Marisol Vega",
+      "text": "That's tough for us, payroll is on the 16th. Is there any way to pay part of it earlier?"
+    },
+    {
+      "t": "01:02",
+      "speaker": "Luis Pardo",
+      "text": "I can't promise that. I'll ask my manager and let you know by October 12."
+    },
+    {
+      "t": "01:20",
+      "speaker": "Marisol Vega",
+      "text": "Okay. I'll send you a statement copy today so it's in front of your manager."
+    },
+    {
+      "t": "01:35",
+      "speaker": "Luis Pardo",
+      "text": "Thanks, that helps. The 21st is firm for the full $4,000."
+    },
+    {
+      "t": "01:48",
+      "speaker": "Marisol Vega",
+      "text": "Understood. Thanks for telling me."
+    }
+  ]
+}

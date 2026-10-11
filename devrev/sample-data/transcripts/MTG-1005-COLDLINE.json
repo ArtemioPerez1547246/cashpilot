@@ -1,0 +1,40 @@
+{
+  "synthetic": true,
+  "note": "Synthetic demo data written for Hack Midwest 2026 (Paleteria El Sol, CashPilot).",
+  "meeting_id": "MTG-1005-COLDLINE",
+  "date": "2026-10-05",
+  "account": "Coldline Freezers",
+  "account_id": "ACC-COLDLINE",
+  "title": "Dipping cabinet upgrade delivery",
+  "attendees": [
+    "Marisol Vega (Paleteria El Sol, owner)",
+    "Ana Ruiz (Coldline Freezers, sales)"
+  ],
+  "transcript": [
+    {
+      "t": "00:00",
+      "speaker": "Ana Ruiz",
+      "text": "The display freezer upgrade is scheduled for October 15, $2,500 due on delivery."
+    },
+    {
+      "t": "00:20",
+      "speaker": "Marisol Vega",
+      "text": "If I needed to push delivery a week, is that possible?"
+    },
+    {
+      "t": "00:30",
+      "speaker": "Ana Ruiz",
+      "text": "Yes, we can hold it until October 21 with no fee if you tell us by October 13."
+    },
+    {
+      "t": "00:48",
+      "speaker": "Marisol Vega",
+      "text": "Good to know. I'll let you know either way by October 13."
+    },
+    {
+      "t": "01:00",
+      "speaker": "Ana Ruiz",
+      "text": "Great, I'll keep the 15th on the calendar until then."
+    }
+  ]
+}

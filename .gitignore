@@ -226,3 +226,5 @@ __pycache__/
 backend/data/actions.db
 backend/data/alerts.json
 .env
+.DS_Store
+*.zip

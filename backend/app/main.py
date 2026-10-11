@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from . import monitor
 from .actions import clear as clear_actions, get_action, list_actions, set_status
 from .agent import agent as agent_mod, investigate
+from .devrev_board import store as board
 from .engine import scenarios as S
 
 @asynccontextmanager
@@ -152,3 +153,17 @@ def demo_reset():
     monitor.reset()
     clear_actions()
     return {"ok": True}
+
+
+# ---------- DevRev follow-up board (Enterprise-Bench data only; separate from cash data) ----------
+@app.get("/api/devrev/follow-ups")
+def devrev_follow_ups(account: str = "", status: str = "", limit: int = 100, offset: int = 0):
+    return board.list_follow_ups(account, status, limit, offset)
+
+
+@app.post("/api/devrev/follow-ups/{follow_up_id}/status")
+def devrev_set_status(follow_up_id: str, status: str):
+    f = board.set_status(follow_up_id, status)
+    if f is None:
+        raise HTTPException(404, detail=f"follow-up {follow_up_id} not found")
+    return f

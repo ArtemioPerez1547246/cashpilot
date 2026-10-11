@@ -1,5 +1,8 @@
 # DOMAIN comes from deploy/.env, e.g. 172-105-12-34.sslip.io (works with no domain purchase).
 {$DOMAIN} {
+	handle /mcp* {
+		reverse_proxy board:8001
+	}
 	handle /api/* {
 		reverse_proxy api:8000
 	}

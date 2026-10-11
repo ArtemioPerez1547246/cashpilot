@@ -1,0 +1,38 @@
+{
+  "synthetic": true,
+  "accounts": [
+    {
+      "account_id": "ACC-RIDGE-CORP",
+      "name": "Ridgeline Corp",
+      "domain": "ridgelinecorp.example",
+      "type": "catering client",
+      "open_invoices": [
+        "INV-2041"
+      ]
+    },
+    {
+      "account_id": "ACC-RIDGE-EVT",
+      "name": "Ridgeline Events LLC",
+      "domain": "ridgeline-events.example",
+      "type": "catering prospect"
+    },
+    {
+      "account_id": "ACC-SIERRA",
+      "name": "Sierra Dairy Co-op",
+      "domain": "sierradairy.example",
+      "type": "supplier"
+    },
+    {
+      "account_id": "ACC-COLDLINE",
+      "name": "Coldline Freezers",
+      "domain": "coldline.example",
+      "type": "equipment vendor"
+    },
+    {
+      "account_id": "ACC-BLUEBONNET",
+      "name": "Bluebonnet Elementary PTA",
+      "domain": "bluebonnetpta.example",
+      "type": "prospect"
+    }
+  ]
+}

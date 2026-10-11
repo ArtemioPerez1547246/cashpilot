@@ -281,6 +281,44 @@ s, f = ov["settings"], ov["forecast"]
 days = f["days"]
 reserve = s["min_reserve"]
 
+# ---------- view switch: CashPilot vs. DevRev follow-up board ----------
+view = st.radio("View", ["CashPilot", "Enterprise follow-ups (DevRev)"], horizontal=True, label_visibility="collapsed")
+
+if view != "CashPilot":
+    st.title("Enterprise follow-ups (DevRev)")
+    st.caption("Created by DevRev Computer through our MCP connector, after the user approved each preview. "
+               "Evidence comes only from DevRev's Enterprise-Bench synthetic data; nothing here touches "
+               "CashPilot's cash data.")
+    if st.button("Refresh"):
+        st.rerun()
+    acct = st.text_input("Filter by account", "")
+    data = get("/api/devrev/follow-ups", account=acct)
+    items = data["follow_ups"]
+    m = st.columns(3)
+    m[0].metric("Follow-ups", data["total"])
+    m[1].metric("Open", sum(1 for f in items if f["status"] == "open"))
+    m[2].metric("Duplicates blocked", sum(f["repeat_attempts"] for f in items))
+    if not items:
+        st.info("No follow-ups yet. In DevRev Computer, ask the commitment-to-action skill to review an account.")
+    for f in items:
+        with st.container(border=True):
+            badge = "🟢 open" if f["status"] == "open" else "✅ done"
+            st.write(f"**{f['id']} · {f['title']}** · {f['account']} · {badge}")
+            st.caption(f"Owner: {f['owner']} · Due: {f['due_date']} · Requested by {f['requested_by']} "
+                       f"· created {f['created_at'][:16].replace('T', ' ')} UTC"
+                       + (f" · repeat runs blocked: {f['repeat_attempts']}" if f["repeat_attempts"] else ""))
+            if f["details"]:
+                st.write(f["details"])
+            for s_ in f["sources"]:
+                loc = " · ".join(x for x in [s_["lines"] and f"lines {s_['lines']}",
+                                             s_["sha256"] and f"sha256 {s_['sha256'][:12]}…"] if x)
+                st.caption(f"📎 Source: `{s_['ref']}`" + (f" ({loc})" if loc else "")
+                           + (f" — “{s_['quote']}”" if s_["quote"] else ""))
+            if f["status"] == "open" and st.button("Mark done", key=f"done-{f['id']}"):
+                post(f"/api/devrev/follow-ups/{f['id']}/status?status=done")
+                st.rerun()
+    st.stop()
+
 # ---------- header ----------
 h1, h2 = st.columns([3, 2], vertical_alignment="bottom")
 h1.markdown(f"<h1 style='margin:0;font-size:38px'>{BUSINESS} · CashPilot</h1>"
