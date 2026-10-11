@@ -676,7 +676,7 @@ h1.markdown(f"<h1 style='margin:0;font-size:38px'>{BUSINESS} · ForeCash</h1>"
             f"<div style='color:{MUTED}'>Find the cheapest way through a cash crunch, and what it costs to wait.</div>",
             unsafe_allow_html=True)
 h2.markdown(f"<div style='text-align:right;font-weight:600'>Cash forecast {day_long(days[0]['date'])} – "
-            f"{day_long(days[-1]['date'])} · Reserve: {money(reserve)}</div>", unsafe_allow_html=True)
+            f"{day_long(days[-1]['date'])}</div>", unsafe_allow_html=True)
 
 # ---------- status banner ----------
 if alert and alert["status"] == "investigating":
