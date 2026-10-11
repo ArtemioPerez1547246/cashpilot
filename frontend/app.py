@@ -937,7 +937,7 @@ def devrev_commitments_panel():
 devrev_commitments_panel()
 
 # ---------- AI analyst (left, red week only) + approvals and plan details (right) ----------
-right_sections = []
+right_sections, trace_inv = [], None
 if trouble:
     c_ai, c_ok = st.columns(2, gap="medium")
     with c_ai:
@@ -971,9 +971,9 @@ if trouble:
                     memo_card(title, body)
                 else:
                     right_sections.append((title, body))
-            with st.expander(f"How the Strands agent worked: tool trace ({len(inv['trace'])} calls)"):
-                for t in inv["trace"]:
-                    st.markdown(md(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}"))
+            for title, body in right_sections:   # cheapest plan, cost of waiting, actions drafted: on the left
+                memo_card(title, body)
+            trace_inv = inv                      # the Strands tool trace goes on the right
         else:
             st.caption("ForeCash writes its analysis here when it spots a problem.")
 else:
@@ -998,9 +998,10 @@ with c_ok:
                     st.rerun()
             else:
                 st.markdown(f"Status: `{a['status']}`")
-    st.caption("Nothing is sent without your approval. Approving twice never sends twice.")
-    for title, body in right_sections:     # the rest of the AI memo (cheapest plan, cost of waiting, ...)
-        memo_card(title, body)
+    if trace_inv:                          # how the Strands agent worked: starts open, can be closed
+        with st.expander(f"How the Strands agent worked: tool trace ({len(trace_inv['trace'])} calls)", expanded=True):
+            for t in trace_inv["trace"]:
+                st.markdown(md(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}"))
 
 # ---------- footer ----------
 html("<div class='cp-footer'>Demo data (synthetic) · Runs on Akamai Cloud · Agent built with Strands</div>")
