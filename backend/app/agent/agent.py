@@ -14,6 +14,7 @@ from ..engine import scenarios as S
 from .prompts import SYSTEM_PROMPT
 from .tools import (ALL_TOOLS, cost_of_waiting, draft_action, find_drivers, forecast_cash_flow,
                     get_trace, optimize_plan, start_trace)
+from .structured import CashMemo, render, semantic_check
 from .verifier import verify
 
 
@@ -85,25 +86,51 @@ def _template_memo(scenario):
 def investigate(scenario="live", question="Will we run short of cash this week? Explain why and what to do."):
     start_trace()
     mode, error = provider(), None
-    memo = None
+    memo, structured, checks = None, False, []
     if mode != "stub":
         try:
-            agent = build_agent()
-            memo = str(agent(f"Scenario: {scenario}. Question: {question}"))
+            prompt = f"Scenario: {scenario}. Question: {question}"
+            agent, so = build_agent(), None
+            try:   # Strands structured output: a typed CashMemo, checked field by field against the engine
+                res = agent(prompt, structured_output_model=CashMemo)
+                so = getattr(res, "structured_output", None)
+                if so is not None:
+                    checks = semantic_check(so, scenario)
+                    bad = [c for c in checks if not c["ok"]]
+                    if bad:
+                        res = agent("These fields do not match the engine: " + "; ".join(
+                            f"{c['field']} should be {c['expected']}, you wrote {c['got']}" for c in bad)
+                            + ". Return the corrected memo.", structured_output_model=CashMemo)
+                        so = getattr(res, "structured_output", None) or so
+                        checks = semantic_check(so, scenario)
+                    memo, structured = render(so), True
+            except Exception:
+                so, checks = None, []
+            if so is None:   # older Strands or structured output failed: plain text memo, as before
+                start_trace()
+                agent = build_agent()
+                memo = str(agent(prompt))
             check = verify(memo, get_trace()["outputs"])
             if not check["verified"]:
-                memo = str(agent("These figures are not in any tool output: "
-                                 f"{check['unverified_amounts'] + check['unknown_txn_ids']}. "
-                                 "Rewrite the memo using only numbers returned by the tools."))
+                fix = ("These figures are not in any tool output: "
+                       f"{check['unverified_amounts'] + check['unknown_txn_ids']}. "
+                       "Rewrite the memo using only numbers returned by the tools.")
+                if structured:   # keep the memo structured and re-check every field
+                    so = getattr(agent(fix, structured_output_model=CashMemo), "structured_output", None) or so
+                    checks, memo = semantic_check(so, scenario), render(so)
+                else:
+                    memo = str(agent(fix))
         except Exception as exc:  # model down, bad credentials, etc. The demo must keep working.
-            error, memo = f"{type(exc).__name__}: {exc}", None
+            error, memo, structured, checks = f"{type(exc).__name__}: {exc}", None, False, []
             start_trace()  # the stub re-runs the tools; show only its calls, not both runs
     if memo is None:
         mode = "stub" if mode == "stub" else f"stub (model failed: {error})"
         memo = _template_memo(scenario)
     tr = get_trace()
     check = verify(memo, tr["outputs"])
-    return {"memo": memo, "trace": tr["calls"], "verified": check["verified"],
+    semantic_ok = all(c["ok"] for c in checks)
+    return {"memo": memo, "trace": tr["calls"], "verified": check["verified"] and semantic_ok,
+            "structured": structured, "semantic_checks": checks,
             "unverified_amounts": check["unverified_amounts"], "cited_txn_ids": check["cited_txn_ids"],
             "mode": mode}
     

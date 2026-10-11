@@ -957,12 +957,15 @@ if trouble:
             else:
                 check = ("<span class='cp-pill' style='background:#DDF2EC;color:#0B5D57;font-weight:600'>"
                          "✓ Every dollar amount matches an engine output</span>") if inv["verified"] else (
-                         f"<span class='cp-pill' style='background:#FCE4E2'>⚠ Unverified: {inv['unverified_amounts']}</span>")
+                         f"<span class='cp-pill' style='background:#FCE4E2'>⚠ Unverified: {inv['unverified_amounts'] + [c['field'] for c in inv.get('semantic_checks', []) if not c['ok']]}</span>")
                 tools = len({t["tool"] for t in inv["trace"]})
                 where = PROVIDERS.get(health["model_provider"], health["model_provider"])
                 html(f"{check}<span class='cp-pill' style='background:#EEF2F1'>Strands agent · AI on {where} · {tools} tools used</span>"
                      f"<span class='cp-pill' style='background:#EEF2F1'>🛡 Guardrail hooks: "
-                     f"{sum(1 for t in inv['trace'] if t['tool'] == 'guardrail')} blocked</span>")
+                     f"{sum(1 for t in inv['trace'] if t['tool'] == 'guardrail')} blocked</span>"
+                     + (f"<span class='cp-pill' style='background:#DDF2EC;color:#0B5D57'>🧾 Structured memo: "
+                        f"{sum(1 for c in inv['semantic_checks'] if c['ok'])}/{len(inv['semantic_checks'])} "
+                        f"fields match the engine</span>" if inv.get("structured") else ""))
             sections = split_memo(inv["memo"])
             for title, body in sections:
                 if not title or title.lower().startswith(MEMO_LEFT):
