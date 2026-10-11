@@ -18,4 +18,7 @@ def forecast(txns, opening_cash, start, horizon, reserve):
     return ForecastResult(days=days, ending_cash=days[-1].closing,
                           min_balance=low.closing, min_date=low.date,
                           first_below_reserve=below, first_negative=neg,
-                          shortfall_vs_reserve=max(0, reserve - low.closing))
+                          shortfall_vs_reserve=max(0, reserve - low.closing),
+                          total_inflows=sum(d.inflows for d in days),
+                          total_outflows=sum(d.outflows for d in days),
+                          net_change=days[-1].closing - opening_cash)

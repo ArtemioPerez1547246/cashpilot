@@ -98,7 +98,7 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 [class*="-yesdel"] button p, [class*="-delete"] button p {{ color: inherit !important; }}
 
 /* "Try a fix" dropdown button looks like an input box */
-.st-key-fixbox [data-testid="stPopover"] > div > button, .st-key-fixbox [data-testid="stPopoverButton"] {{
+.st-key-fixbox button {{
   background: #fff !important; border: 1px solid {LINE} !important;
   color: {INK} !important; justify-content: space-between; min-height: 44px; }}
 
@@ -533,6 +533,24 @@ def top_bar():
 
 top_bar()
 
+# ---------- "Try a fix" pop-up: tick options, Apply closes the window ----------
+@st.dialog("Try a fix", width="large")
+def fix_dialog():
+    levers = get("/api/levers")
+    st.caption("Tick the options to test, then press Apply. Nothing is paid or sent; this only tests the plan.")
+    chosen = [lv["id"] for lv in levers
+              if st.checkbox(clean(lv["name"]), value=lv["id"] in st.session_state.applied_fixes, key=f"fx-{lv['id']}")]
+    b1, b2 = st.columns(2)
+    if b1.button("Apply changes", type="primary", width="stretch", key="fx-apply"):
+        st.session_state.applied_fixes = chosen
+        st.session_state.data_ver += 1
+        st.rerun()
+    if b2.button("Clear", width="stretch", key="fx-clear"):
+        st.session_state.applied_fixes = []
+        st.session_state.data_ver += 1
+        st.rerun()
+
+
 # open whichever pop-up the menu asked for (pop = it only opens once)
 dlg = st.session_state.pop("dialog", None)
 if dlg == "new_expense":
@@ -545,6 +563,8 @@ elif dlg == "new_promise":
     new_promise_dialog()
 elif dlg == "view_promises":
     view_promises_dialog()
+elif dlg == "fix":
+    fix_dialog()
 
 msg = st.session_state.pop("toast_msg", None)
 if msg:
@@ -671,14 +691,8 @@ def forecast_section(ver, f, reserve):
             label = (f"{len(picked)} option{'s' if len(picked) != 1 else ''} applied" if picked
                      else "Pick one or more options")
             with st.container(key="fixbox"):
-                with st.popover(label, width="stretch"):
-                    with st.form("fix-form", border=False):
-                        for lid, name in names.items():
-                            st.checkbox(name, key=f"lv-{lid}")
-                        b1, b2 = st.columns(2)
-                        b1.form_submit_button("Apply changes", type="primary", width="stretch",
-                                              on_click=apply_fixes, args=(list(names),))
-                        b2.form_submit_button("Clear", width="stretch", on_click=clear_fixes)
+                if st.button(label + "  ▾", width="stretch", key="fix-open"):
+                    open_dialog("fix")
             if picked:
                 st.caption("Testing: " + md(", ".join(names[lid] for lid in picked)))
             sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)}) if picked else None
@@ -734,9 +748,18 @@ def forecast_section(ver, f, reserve):
             flow.update_layout(barmode="group", height=372, margin=dict(l=20, r=20, t=10, b=20), plot_bgcolor="#fff",
                                paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=13, color=INK),
                                legend_orientation="h", legend_y=1.12, bargap=0.25,
+                               legend_itemclick="toggleothers", legend_itemdoubleclick="toggle",
                                yaxis=dict(tickprefix="$", tickformat=",", gridcolor="#EEF2F1", automargin=True),
                                xaxis=dict(automargin=True, tickfont=dict(size=13)))
             chart(flow)
+            if f.get("total_inflows") is not None:      # weekly totals come from the engine
+                html(f"<div style='display:flex;gap:24px;flex-wrap:wrap;margin:-6px 0 0 6px'>"
+                     f"<div><div class='cp-note'>Money in this week</div>"
+                     f"<div style='font-weight:800;font-size:20px;color:{GREEN}'>{money(f['total_inflows'])}</div></div>"
+                     f"<div><div class='cp-note'>Money out this week</div>"
+                     f"<div style='font-weight:800;font-size:20px;color:{RED}'>{money(f['total_outflows'])}</div></div>"
+                     f"<div><div class='cp-note'>Difference</div>"
+                     f"<div style='font-weight:800;font-size:20px;color:{INK}'>{signed(f['net_change'])}</div></div></div>")
 
     # ----- cheapest plan (boxed card on a green week) -----
     with c_plan:

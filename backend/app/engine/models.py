@@ -29,6 +29,9 @@ class ForecastResult(BaseModel):
     first_below_reserve: Optional[str]
     first_negative: Optional[str]
     shortfall_vs_reserve: float
+    total_inflows: float = 0
+    total_outflows: float = 0
+    net_change: float = 0
 
 class Driver(BaseModel):
     txn_id: str
