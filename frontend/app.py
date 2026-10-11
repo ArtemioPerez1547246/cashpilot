@@ -191,6 +191,7 @@ def clean(s):        # repair "PaleterÃa"-style garbled text and swap in the di
         pass
     for old in OLD_NAMES:
         s = s.replace(old, BUSINESS)
+    s = s.replace("Card settlement", "Revenue")
     return s
 
 
@@ -630,12 +631,12 @@ else:
 bad = f["shortfall_vs_reserve"] > 0
 low_color = RED if f["min_balance"] < reserve else INK
 html(f"""<div class='cp-kpis'>
-<div><div class='cp-label'>Cash today</div><div class='cp-value'>{money(s['opening_cash'])}</div></div>
+<div><div class='cp-label'>Cash today</div><div class='cp-value' style='color:{RED if s['opening_cash'] < 0 else INK}'>{money(s['opening_cash'])}</div></div>
 <div><div class='cp-label'>Lowest balance</div>
  <div class='cp-value' style='color:{low_color}'>{money(f['min_balance'])}
  <span style='font-size:15px;font-weight:600'>{day_long(f['min_date'])}</span></div>
  <div class='cp-note'>We judge safety by your worst day, not your last day.</div></div>
-<div><div class='cp-label'>Ending cash</div><div class='cp-value'>{money(f['ending_cash'])}</div></div>
+<div><div class='cp-label'>Ending cash</div><div class='cp-value' style='color:{RED if f['ending_cash'] < 0 else INK}'>{money(f['ending_cash'])}</div></div>
 <div><div class='cp-label'>Below reserve by</div>
  <div class='cp-value' style='color:{RED if bad else GREEN}'>{money(f['shortfall_vs_reserve'])}</div></div>
 </div>""")
@@ -891,7 +892,6 @@ with c_ok:
                     st.rerun()
             else:
                 st.markdown(f"Status: `{a['status']}`")
-    st.caption("Nothing is sent without your approval. Approving twice never sends twice.")
     for title, body in right_sections:     # the rest of the AI memo (cheapest plan, cost of waiting, ...)
         memo_card(title, body)
 
