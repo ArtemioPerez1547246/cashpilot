@@ -1,4 +1,4 @@
-"""The ForCash Strands agent.
+"""The ForeCash Strands agent.
 
 MODEL_PROVIDER picks the model with one environment variable:
   akamai   -> Akamai hosted inference (OpenAI-compatible): AKAMAI_BASE_URL, AKAMAI_API_KEY, AKAMAI_MODEL

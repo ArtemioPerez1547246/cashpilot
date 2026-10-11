@@ -1,4 +1,4 @@
-"""ForCash follow-up board as an MCP server for DevRev Computer (Streamable HTTP + Bearer token).
+"""ForeCash follow-up board as an MCP server for DevRev Computer (Streamable HTTP + Bearer token).
 
 Run from backend/:   MCP_TOKEN=... python -m app.devrev_board.server
 In Computer set access modes: create_follow_up = Needs approval; the other three = Always allow.
@@ -19,7 +19,7 @@ if len(TOKEN) < 32:
 HOSTS = [h.strip() for h in os.getenv("MCP_ALLOWED_HOSTS", "localhost:*,127.0.0.1:*").split(",") if h.strip()]
 ORIGINS = [o.strip() for o in os.getenv("MCP_ALLOWED_ORIGINS", "").split(",") if o.strip()]
 
-mcp = FastMCP("ForCash Follow-up Board and Evidence", stateless_http=True, json_response=True,
+mcp = FastMCP("ForeCash Follow-up Board and Evidence", stateless_http=True, json_response=True,
               transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=True,
                                                            allowed_hosts=HOSTS, allowed_origins=ORIGINS))
 READ = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}

@@ -60,7 +60,7 @@ def _draft(txn_id, new_date, said_by, channel, quote, customer):
                f"arrive on {new_date} instead of {t.date} ({days} days later). Recorded by the owner; "
                f"no call transcript exists for this statement.")
     fields = dict(account=customer, title=title, details=details, owner=said_by, due_date=new_date,
-                  requested_by="ForCash owner (website)",
+                  requested_by="ForeCash owner (website)",
                   sources=[{"ref": f"owner-note:{txn_id}:{new_date}", "sha256": sha,
                             "quote": note["quote"] or f"(verbal, {channel})"}])
     return t, days, key, fields
@@ -94,7 +94,7 @@ def apply(txn_id, new_date, said_by, channel="in person", quote="", customer="")
         return {"follow_up": match, "created": False, "alert": alert, "devrev": None,
                 "note": f"Payment moved {days} days. DevRev already tracks this promise as {match['id']}."}
     res = store.create(idempotency_key=key, **fields)
-    sync = devrev_sync.post_comment(f"[ForCash] {fields['title']}. {fields['details']}"
+    sync = devrev_sync.post_comment(f"[ForeCash] {fields['title']}. {fields['details']}"
                                     + (f' Quote: "{fields["sources"][0]["quote"]}"' if quote else ""))
     return {"follow_up": res["follow_up"], "created": True, "alert": alert, "devrev": sync,
             "note": f"Payment moved {days} days; follow-up {res['follow_up']['id']} created."}

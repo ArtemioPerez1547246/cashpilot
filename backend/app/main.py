@@ -1,4 +1,4 @@
-"""ForCash API. Thin routes over the engine, agent, action queue and monitor."""
+"""ForeCash API. Thin routes over the engine, agent, action queue and monitor."""
 import os
 from contextlib import asynccontextmanager
 
@@ -19,7 +19,7 @@ async def lifespan(_app):
     yield
 
 
-app = FastAPI(title="ForCash API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="ForeCash API", version="1.0.0", lifespan=lifespan)
 
 
 @app.exception_handler(KeyError)

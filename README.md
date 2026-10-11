@@ -1,6 +1,6 @@
-# ForCash
+# ForeCash
 
-*ForCash: forecast your cash.*
+*ForeCash: forecast your cash.*
 
 **Finds the cheapest way through a small business's cash crunch, and shows what it costs to wait.**
 
@@ -11,7 +11,7 @@ Live: <https://172-237-149-215.sslip.io>
 
 ## What it does
 
-A customer tells the owner they'll pay late. ForCash moves the payment in the forecast, sees that
+A customer tells the owner they'll pay late. ForeCash moves the payment in the forecast, sees that
 payroll on Friday Oct 16 now leaves the business at **−$2,200** (reserve: $1,500), finds the cheapest
 safe plan out of every combination of 10 financing and timing options, prices what each day of
 waiting costs, and drafts the messages to send. A Strands agent explains it in plain language, and
@@ -21,7 +21,7 @@ every dollar figure it writes is checked against the engine. Nothing is sent unt
 
 | Sponsor | What we built | Where to see it | Code |
 |---|---|---|---|
-| **Flex · Best FinTech** | An optimizer that prices real financing costs (credit line at 12% APR, invoice advance fee, merchant cash advance factor rate, late fees, free reschedules) and tests every combination to keep **every day** above the reserve. Cost of waiting: $9.21 → $124.60 → no safe plan. | "Cheapest plan" + "How ForCash priced every option" + "What waiting costs you" | `backend/app/engine/` |
+| **Flex · Best FinTech** | An optimizer that prices real financing costs (credit line at 12% APR, invoice advance fee, merchant cash advance factor rate, late fees, free reschedules) and tests every combination to keep **every day** above the reserve. Cost of waiting: $9.21 → $124.60 → no safe plan. | "Cheapest plan" + "How ForeCash priced every option" + "What waiting costs you" | `backend/app/engine/` |
 | **AWS · Best use of Strands Agents** | A Strands agent with 6 tools (forecast, drivers, optimizer, cost of waiting, transactions, draft action). A verifier checks every dollar amount and transaction ID in the memo against tool outputs and asks the agent to rewrite if any don't match. Visible tool trace. | "What happened and why" → ✓ badge + "tool trace" | `backend/app/agent/` |
 | **Akamai · Cloud AI** | Runs on an Akamai Linode (Docker Compose + Caddy HTTPS). The agent's model is Akamai hosted inference (`hackathon-chat`). The DevRev MCP connector is served from the same box. | Live URL · "AI on Akamai" pill | `deploy/`, `backend/app/agent/agent.py` |
 | **DevRev · Computer** | A combined build: one MCP connector (7 tools: read-only evidence search + an approval-gated follow-up board with idempotency) and a reusable Computer skill that turns customer promises in call transcripts into tracked follow-ups with file, line range and sha256. The owner can also record a promise from the website. Tested end to end in Computer (results in `devrev/README.md`). | ☰ → New / View → "(DevRev)" · DevRev panel under the alert · "Enterprise follow-ups (DevRev)" view | `devrev/`, `backend/app/devrev_board/` |

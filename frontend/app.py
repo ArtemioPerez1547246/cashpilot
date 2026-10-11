@@ -1,4 +1,4 @@
-"""ForCash dashboard (Streamlit), design 05 + dropdown menu. Owner: Irvin.
+"""ForeCash dashboard (Streamlit), design 05 + dropdown menu. Owner: Irvin.
 Talks only to the FastAPI backend. Every dollar figure comes from the engine;
 this file only formats numbers, it never calculates them.
 
@@ -35,7 +35,7 @@ SAMPLE_EXPENSES = [
 TEAL, LIME, INK, MUTED = "#0B5D57", "#C8EF5A", "#10201E", "#3D5753"
 RED, AMBER, GREEN, BG, LINE = "#A3231A", "#C27C00", "#0B5D57", "#F2F6F5", "#98ADA9"
 
-st.set_page_config(page_title="ForCash", page_icon="🌪️", layout="wide",
+st.set_page_config(page_title="ForeCash", page_icon="🌪️", layout="wide",
                    initial_sidebar_state="collapsed")
 
 st.markdown(f"""
@@ -404,7 +404,7 @@ def new_promise_dialog():
     m2.metric("Lowest balance after", money(p["after"]["lowest"]), day_long(p["after"]["lowest_date"]), delta_color="off")
     if p["after"]["lowest"] < p["reserve"]:
         st.warning(md(f"This drops cash below your {money(p['reserve'])} reserve. "
-                      "ForCash will alert you and find the cheapest fix."))
+                      "ForeCash will alert you and find the cheapest fix."))
     if p["already_recorded"]:
         st.info(f"DevRev already tracks this promise as {p['already_recorded']}. "
                 "Approving updates the forecast without a duplicate follow-up.")
@@ -454,14 +454,14 @@ def top_bar():
     with st.container(key="topbar"):
         c0, c1, c2, c3 = st.columns([0.5, 4.5, 3.8, 1.4], vertical_alignment="center")
         c0.button("☰", key="menubtn", help="Menu", on_click=toggle_menu)
-        c1.markdown("🌪️ ForCash")
+        c1.markdown("🌪️ ForeCash")
         moved = any(t["id"] == "T08" and t["date"][:10] != "2026-10-15" for t in get("/api/transactions"))
         if c2.button("Simulate: Ridgeline pays 6 days late", type="primary", width="stretch", disabled=moved,
                      help="Already applied. Press Reset demo to run it again." if moved else None):
             post("/api/events", {"type": "payment_delayed", "txn": "T08", "days": 6})
             st.session_state.data_ver += 1
             st.session_state.menu_open = False
-            st.toast("Event sent. ForCash is investigating.")
+            st.toast("Event sent. ForeCash is investigating.")
             st.rerun()                               # numbers changed: refresh the whole page
         if c3.button("Reset demo", width="stretch"):
             post("/api/demo/reset")
@@ -521,14 +521,14 @@ s, f = ov["settings"], ov["forecast"]
 days = f["days"]
 reserve = s["min_reserve"]
 
-# ---------- view switch: ForCash vs. DevRev follow-up board ----------
-view = st.radio("View", ["ForCash", "Enterprise follow-ups (DevRev)"], horizontal=True, label_visibility="collapsed")
+# ---------- view switch: ForeCash vs. DevRev follow-up board ----------
+view = st.radio("View", ["ForeCash", "Enterprise follow-ups (DevRev)"], horizontal=True, label_visibility="collapsed")
 
-if view != "ForCash":
+if view != "ForeCash":
     st.title("Enterprise follow-ups (DevRev)")
     st.caption("Created by DevRev Computer through our MCP connector, after the user approved each preview. "
                "Evidence: synthetic call transcripts written for this demo (DevRev confirmed teams may load their own data). "
-               "Open follow-ups about incoming payments also appear on the ForCash page.")
+               "Open follow-ups about incoming payments also appear on the ForeCash page.")
     if st.button("Refresh"):
         st.rerun()
     acct = st.text_input("Filter by account", "")
@@ -564,7 +564,7 @@ if view != "ForCash":
 
 # ---------- header ----------
 h1, h2 = st.columns([3, 2], vertical_alignment="bottom")
-h1.markdown(f"<h1 style='margin:0;font-size:38px'>{BUSINESS} · ForCash</h1>"
+h1.markdown(f"<h1 style='margin:0;font-size:38px'>{BUSINESS} · ForeCash</h1>"
             f"<div style='color:{MUTED}'>Find the cheapest way through a cash crunch, and what it costs to wait.</div>",
             unsafe_allow_html=True)
 h2.markdown(f"<div style='text-align:right;font-weight:600'>Cash forecast {day_long(days[0]['date'])} – "
@@ -573,7 +573,7 @@ h2.markdown(f"<div style='text-align:right;font-weight:600'>Cash forecast {day_l
 # ---------- status banner ----------
 if alert and alert["status"] == "investigating":
     html("<div class='cp-alert' style='background:#FFF4CC;border:1px solid #E0C060'>"
-         "<div class='big'>🌩️ ForCash is tracking a change in your cash…</div></div>")
+         "<div class='big'>🌩️ ForeCash is tracking a change in your cash…</div></div>")
     time.sleep(2)
     st.rerun()
 elif f["shortfall_vs_reserve"] == 0:
@@ -581,7 +581,7 @@ elif f["shortfall_vs_reserve"] == 0:
          f"<div class='big' style='color:{GREEN}'>☀️ Clear skies: you’re safe this week. Lowest balance: {money(f['min_balance'])} "
          f"on {day_long(f['min_date'])}{payroll_tag(f['min_date'])}.</div></div>")
 else:
-    proof = ("<div style='font-size:14px;margin-top:4px'>ForCash spotted this on its own and investigated. "
+    proof = ("<div style='font-size:14px;margin-top:4px'>ForeCash spotted this on its own and investigated. "
              "Nobody had to ask.</div>") if alert else ""
     html(f"<div class='cp-alert' style='background:#FCE4E2;border:1px solid #E5A19A'>"
          f"<div class='big' style='color:#7E1A12'>🌪️ Storm warning: cash runs short: {money(f['min_balance'])} on "
@@ -711,12 +711,12 @@ def forecast_section(ver, f, reserve):
                     detail += f" interest; repay {cents(repay[lid]['amount'])} on {day_long(repay[lid]['date'])}"
                 lines.append(f"<li>{names.get(lid, lid)} ({detail})</li>")
             html(f"<ol style='padding-left:20px;line-height:1.6;font-size:17px'>{''.join(lines)}</ol>"
-                 f"<div class='cp-note'>ForCash tested every combination of {len(levers)} options.</div>")
+                 f"<div class='cp-note'>ForeCash tested every combination of {len(levers)} options.</div>")
         else:
             st.markdown("### No safe plan")
             st.error(md(p["note"]))
         if p["levers"] or not p["feasible"]:
-            with st.expander("How ForCash priced every option"):
+            with st.expander("How ForeCash priced every option"):
                 for lv in sorted(levers, key=lambda l: l["cost_usd"]):
                     tag = " · ✅ in the plan" if lv["id"] in p["levers"] else (" · last resort" if lv.get("last_resort") else "")
                     st.markdown(md(f"**{cents(lv['cost_usd'])}** · {lv['name']}{tag}"))
@@ -798,7 +798,7 @@ with c_ai:
     st.markdown("### What happened and why")
     inv = next((a["investigation"] for a in alerts if a.get("investigation")), None)
     if st.button("Investigate now"):
-        with st.spinner("ForCash is checking the numbers…"):
+        with st.spinner("ForeCash is checking the numbers…"):
             try:
                 inv = post("/api/investigate", {"scenario": SCENARIO})
             except Exception:
@@ -824,7 +824,7 @@ with c_ai:
             for t in inv["trace"]:
                 st.markdown(md(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}"))
     else:
-        st.caption("ForCash writes its analysis here when it spots a problem.")
+        st.caption("ForeCash writes its analysis here when it spots a problem.")
 
 with c_ok:
     st.markdown("### Ready for your approval")

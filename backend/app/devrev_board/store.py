@@ -1,7 +1,7 @@
 """DevRev follow-up board: storage for tasks DevRev Computer creates through our MCP connector.
 
 DATA BOUNDARY: everything here is derived from DevRev's Enterprise-Bench data. It never touches
-ForCash's Paleteria data, the cash forecast, or the ForCash action queue (separate database).
+ForeCash's Paleteria data, the cash forecast, or the ForeCash action queue (separate database).
 
 Idempotency: every follow-up has a key. Creating the same key twice returns the existing task
 (and counts the repeat), so a re-run or a retry after a timeout never makes a duplicate.
@@ -120,7 +120,7 @@ def create(idempotency_key="", **fields):
         raise
     finally:
         conn.close()
-    return {"follow_up": get(fid), "created": True, "note": "Created on the ForCash follow-up board."}
+    return {"follow_up": get(fid), "created": True, "note": "Created on the ForeCash follow-up board."}
 
 
 def get(follow_up_id):

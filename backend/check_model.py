@@ -1,4 +1,4 @@
-"""One-command check that a real model drives the ForCash agent.
+"""One-command check that a real model drives the ForeCash agent.
 
     cd backend
     MODEL_PROVIDER=akamai AKAMAI_API_KEY=... python check_model.py
