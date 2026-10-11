@@ -58,7 +58,8 @@ idempotent creation inside a single SQLite write transaction.
 | Decline the preview: nothing created | builder | Coldline Freezers | Pass: board unchanged |
 | Account with no commitments | builder | Bluebonnet Elementary PTA | Pass: read the full transcript, explained why each line is not a promise, created nothing |
 | Ambiguous account name | builder | "Ridgeline" | Pass: listed Ridgeline Corp and Ridgeline Events LLC with IDs and asked which |
-| Second teammate, own connection, different account | teammate | Sierra Dairy Co-op | _fill in_ |
+| Teammate run 1, own DevRev login and connection | Glenn | Sierra Dairy Co-op | Pass: previewed with file, lines and sha256; approved and created F004 "Confirm order quantities to Sierra Dairy Co-op by Oct 7" (`transcripts/MTG-1002-SIERRA.json` lines 20-23) |
+| Teammate run 2, a different user with own login and connection | Irvin | Sierra Dairy Co-op | Pass: created a different follow-up, F006 "Email net-7 terms request to Sierra Dairy Co-op by Oct 9" (lines 42-43); Sierra's own "might" on net-7 was described as uncertain, not made a task. Both runs used the same account, different commitments |
 | Board, evidence and website-promise unit tests | CI | n/a | 15 passed (7 board, 4 evidence, 4 promise flow) |
 
 ## Known limits
