@@ -35,12 +35,12 @@ SAMPLE_EXPENSES = [
 TEAL, LIME, INK, MUTED = "#0B5D57", "#C8EF5A", "#10201E", "#3D5753"
 RED, AMBER, GREEN, BG, LINE = "#A3231A", "#C27C00", "#0B5D57", "#F2F6F5", "#98ADA9"
 
-st.set_page_config(page_title="ForeCash", page_icon="��", layout="wide",
+st.set_page_config(page_title="ForeCash", page_icon="🍦", layout="wide",
                    initial_sidebar_state="collapsed")
 
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap');
 .stApp, .stApp button, .stApp input, .stApp p, .stApp li {{ font-family: 'Manrope', sans-serif; }}
 .stApp {{ background: {BG}; color: {INK}; }}
 
@@ -76,6 +76,10 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 .st-key-topbar button, .st-key-topbar button * {{ white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; }}
 .st-key-topbar [data-testid="stBaseButton-primary"] p, .st-key-topbar button[kind="primary"] p {{ color: {INK} !important; }}
 
+/* brand name in the top bar */
+.cp-brand {{ font-family: 'Bricolage Grotesque', 'Manrope', sans-serif; font-size: 30px; font-weight: 800;
+  color: #fff; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }}
+
 /* dropdown menu: hangs under the top bar, floats over the page, scrolls with it */
 .st-key-menu {{ position: absolute; top: calc(100% + 8px); left: 0; width: 290px; z-index: 1001;
   background: #fff; border-radius: 8px; padding: 16px 12px;
@@ -87,6 +91,11 @@ h1, h2, h3 {{ font-family: 'Manrope', sans-serif !important; font-weight: 800 !i
 .st-key-menu button:hover {{ border-color: {TEAL} !important; color: {TEAL} !important; }}
 .st-key-sub-new, .st-key-sub-view {{ margin-left: 10px; padding-left: 10px; border-left: 2px solid #D5E2DF; }}
 .st-key-sub-new p, .st-key-sub-view p {{ font-weight: 600; font-size: 14px !important; }}
+
+/* delete buttons in the edit ticket: red */
+[class*="-delete"] button {{ color: {RED} !important; border: 1px solid {RED} !important; background: #fff !important; }}
+[class*="-yesdel"] button {{ color: #fff !important; background: {RED} !important; border: 0 !important; }}
+[class*="-yesdel"] button p, [class*="-delete"] button p {{ color: inherit !important; }}
 
 /* "Try a fix" dropdown button looks like an input box */
 .st-key-fixbox [data-testid="stPopover"] > div > button, .st-key-fixbox [data-testid="stPopoverButton"] {{
@@ -240,6 +249,10 @@ def open_dialog(name):
     st.rerun()
 
 
+def set_flag(key, value):
+    st.session_state[key] = value
+
+
 def apply_fixes(ids):
     st.session_state.applied_fixes = [lid for lid in ids if st.session_state.get(f"lv-{lid}")]
 
@@ -270,7 +283,7 @@ for key, default in [("menu_open", False), ("submenu", None), ("data_ver", 0),
 
 
 # ---------- expense ticket + list (pop-up windows) ----------
-def expense_form(prefix, existing=None):
+def expense_fields(prefix, existing=None):
     e = existing or {}
     name = st.text_input("Name", value=e.get("name", ""), key=f"{prefix}-name",
                          placeholder="Who you’re paying, e.g. Dairy supplier")
@@ -280,15 +293,15 @@ def expense_form(prefix, existing=None):
                          key=f"{prefix}-date")
     if PREVIEW_NOTE:
         st.caption(PREVIEW_NOTE)
-    left, _, right = st.columns([1, 1.2, 1])
-    cancel = left.button("Cancel", key=f"{prefix}-cancel", width="stretch")
-    save = right.button("Save changes", key=f"{prefix}-save", type="primary", width="stretch")
-    return name.strip(), cost, when, cancel, save
+    return name.strip(), cost, when
 
 
 @st.dialog("New expense")
 def new_expense_dialog():
-    name, cost, when, cancel, save = expense_form("new")
+    name, cost, when = expense_fields("new")
+    left, _, right = st.columns([1, 1.2, 1])
+    cancel = left.button("Cancel", key="new-cancel", width="stretch")
+    save = right.button("Save changes", key="new-save", type="primary", width="stretch")
     if cancel:
         forget("new")
         st.rerun()
@@ -308,8 +321,33 @@ def edit_expense_dialog(idx):
     if idx is None or idx >= len(exps):
         st.caption("That expense no longer exists.")
         return
+    e = exps[idx]
     prefix = f"edit{idx}"
-    name, cost, when, cancel, save = expense_form(prefix, exps[idx])
+    confirm_key = f"{prefix}-confirm"
+    name, cost, when = expense_fields(prefix, e)
+
+    # ----- "are you sure?" step -----
+    if st.session_state.get(confirm_key):
+        with st.container(border=True):
+            st.markdown(f"**Delete “{md(e['name'])}”?** Are you sure?")
+            st.caption("This removes the expense from the list.")
+            c_no, _, c_yes = st.columns([1, 1.2, 1])
+            c_no.button("Cancel", key=f"{prefix}-nodel", width="stretch",
+                        on_click=set_flag, args=(confirm_key, False))     # back to the ticket
+            if c_yes.button("Yes", key=f"{prefix}-yesdel", width="stretch"):
+                exps.pop(idx)
+                forget(prefix)
+                st.session_state.toast_msg = "Expense deleted."
+                st.session_state.dialog = "view_expenses"                # back to the list
+                st.rerun()
+        return
+
+    # ----- normal ticket buttons: Cancel + Delete on the left, Save on the right -----
+    c_cancel, c_delete, _, c_save = st.columns([1, 1, 0.3, 1.3])
+    cancel = c_cancel.button("Cancel", key=f"{prefix}-cancel", width="stretch")
+    c_delete.button("Delete", key=f"{prefix}-delete", width="stretch",
+                    on_click=set_flag, args=(confirm_key, True))
+    save = c_save.button("Save changes", key=f"{prefix}-save", type="primary", width="stretch")
     if cancel:
         forget(prefix)
         st.session_state.dialog = "view_expenses"     # back to the list
@@ -454,7 +492,7 @@ def top_bar():
     with st.container(key="topbar"):
         c0, c1, c2, c3 = st.columns([0.5, 4.5, 3.8, 1.4], vertical_alignment="center")
         c0.button("☰", key="menubtn", help="Menu", on_click=toggle_menu)
-        c1.markdown("ForeCash")
+        c1.markdown("<div class='cp-brand'>ForeCash</div>", unsafe_allow_html=True)
         moved = any(t["id"] == "T08" and t["date"][:10] != "2026-10-15" for t in get("/api/transactions"))
         if c2.button("Simulate: Ridgeline pays 6 days late", type="primary", width="stretch", disabled=moved,
                      help="Already applied. Press Reset demo to run it again." if moved else None):
@@ -520,6 +558,7 @@ ov = cget("/api/overview", ver, scenario=SCENARIO)
 s, f = ov["settings"], ov["forecast"]
 days = f["days"]
 reserve = s["min_reserve"]
+trouble = f["shortfall_vs_reserve"] > 0     # red week: show "Try a fix" and the AI analysis
 
 # ---------- view switch: ForeCash vs. DevRev follow-up board ----------
 view = st.radio("View", ["ForeCash", "Enterprise follow-ups (DevRev)"], horizontal=True, label_visibility="collapsed")
@@ -615,38 +654,45 @@ def forecast_section(ver, f, reserve):
     names = {lv["id"]: clean(lv["name"]) for lv in levers}
     costs = {lv["id"]: lv["cost_usd"] for lv in levers}
 
-    c_fix, c_plan, c_wait = st.columns(3, gap="medium")
+    # red week: three columns with "Try a fix"; green week: two boxed cards, no "Try a fix"
+    if bad:
+        c_fix, c_plan, c_wait = st.columns(3, gap="medium")
+    else:
+        c_fix = None
+        c_plan, c_wait = st.columns(2, gap="medium")
+    sim = None
 
-    # ----- try a fix: tick options, then press "Apply changes" -----
-    with c_fix:
-        st.markdown("### Try a fix")
-        picked = [lid for lid in st.session_state.applied_fixes if lid in names]
-        label = (f"{len(picked)} option{'s' if len(picked) != 1 else ''} applied" if picked
-                 else "Pick one or more options")
-        with st.container(key="fixbox"):
-            with st.popover(label, width="stretch"):
-                with st.form("fix-form", border=False):
-                    for lid, name in names.items():
-                        st.checkbox(name, key=f"lv-{lid}")
-                    b1, b2 = st.columns(2)
-                    b1.form_submit_button("Apply changes", type="primary", width="stretch",
-                                          on_click=apply_fixes, args=(list(names),))
-                    b2.form_submit_button("Clear", width="stretch", on_click=clear_fixes)
-        if picked:
-            st.caption("Testing: " + md(", ".join(names[lid] for lid in picked)))
-        sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)}) if picked else None
-        if sim:
-            if sim["shortfall_vs_reserve"] == 0:
-                html(f"<div class='cp-callout' style='background:#DDF2EC'><strong>This keeps you safe every day.</strong> "
-                     f"Lowest balance {money(sim['min_balance'])} on {day_long(sim['min_date'])}.</div>")
-            elif sim["ending_cash"] >= reserve:
-                # the "aha": ending looks fine, worst day doesn't
-                html(f"<div class='cp-callout'>Ending cash looks fine ({signed(sim['ending_cash'])}), but "
-                     f"{as_date(sim['min_date']):%A} payroll still drops you to {money(sim['min_balance'])}, which is "
-                     f"{money(sim['shortfall_vs_reserve'])} below your reserve. <strong>This fix isn’t enough.</strong></div>")
-            else:
-                html(f"<div class='cp-callout' style='background:#FCE4E2'>Still short: lowest balance "
-                     f"{money(sim['min_balance'])} on {day_long(sim['min_date'])}. <strong>This fix isn’t enough.</strong></div>")
+    # ----- try a fix: tick options, then press "Apply changes" (only when there's a problem) -----
+    if c_fix is not None:
+        with c_fix:
+            st.markdown("### Try a fix")
+            picked = [lid for lid in st.session_state.applied_fixes if lid in names]
+            label = (f"{len(picked)} option{'s' if len(picked) != 1 else ''} applied" if picked
+                     else "Pick one or more options")
+            with st.container(key="fixbox"):
+                with st.popover(label, width="stretch"):
+                    with st.form("fix-form", border=False):
+                        for lid, name in names.items():
+                            st.checkbox(name, key=f"lv-{lid}")
+                        b1, b2 = st.columns(2)
+                        b1.form_submit_button("Apply changes", type="primary", width="stretch",
+                                              on_click=apply_fixes, args=(list(names),))
+                        b2.form_submit_button("Clear", width="stretch", on_click=clear_fixes)
+            if picked:
+                st.caption("Testing: " + md(", ".join(names[lid] for lid in picked)))
+            sim = cpost("/api/simulate", ver, {"scenario": SCENARIO, "lever_ids": sorted(picked)}) if picked else None
+            if sim:
+                if sim["shortfall_vs_reserve"] == 0:
+                    html(f"<div class='cp-callout' style='background:#DDF2EC'><strong>This keeps you safe every day.</strong> "
+                         f"Lowest balance {money(sim['min_balance'])} on {day_long(sim['min_date'])}.</div>")
+                elif sim["ending_cash"] >= reserve:
+                    # the "aha": ending looks fine, worst day doesn't
+                    html(f"<div class='cp-callout'>Ending cash looks fine ({signed(sim['ending_cash'])}), but "
+                         f"{as_date(sim['min_date']):%A} payroll still drops you to {money(sim['min_balance'])}, which is "
+                         f"{money(sim['shortfall_vs_reserve'])} below your reserve. <strong>This fix isn’t enough.</strong></div>")
+                else:
+                    html(f"<div class='cp-callout' style='background:#FCE4E2'>Still short: lowest balance "
+                         f"{money(sim['min_balance'])} on {day_long(sim['min_date'])}. <strong>This fix isn’t enough.</strong></div>")
 
     # ----- chart -----
     with chart_box:
@@ -691,69 +737,71 @@ def forecast_section(ver, f, reserve):
                                xaxis=dict(automargin=True, tickfont=dict(size=13)))
             chart(flow)
 
-    # ----- cheapest plan -----
+    # ----- cheapest plan (boxed card on a green week) -----
     with c_plan:
-        p = cpost("/api/optimize", ver, {"scenario": SCENARIO})
-        if p["feasible"] and not p["levers"]:
-            st.markdown("### No action needed")
-            st.success("Cash stays above the reserve every day.")
-        elif p["feasible"]:
-            st.markdown(f"### Cheapest plan that keeps you safe every day: {md(cents(p['total_cost']))}")
-            repay = {r["lever"]: r for r in p["repayments"]}
-            lines = []
-            for lid in p["levers"]:
-                detail = cents(costs.get(lid))
-                if lid in repay:
-                    detail += f" interest; repay {cents(repay[lid]['amount'])} on {day_long(repay[lid]['date'])}"
-                lines.append(f"<li>{names.get(lid, lid)} ({detail})</li>")
-            html(f"<ol style='padding-left:20px;line-height:1.6;font-size:17px'>{''.join(lines)}</ol>"
-                 f"<div class='cp-note'>ForeCash tested every combination of {len(levers)} options.</div>")
-        else:
-            st.markdown("### No safe plan")
-            st.error(md(p["note"]))
-        if p["levers"] or not p["feasible"]:
-            with st.expander("How ForeCash priced every option"):
-                for lv in sorted(levers, key=lambda l: l["cost_usd"]):
-                    tag = " · ✅ in the plan" if lv["id"] in p["levers"] else (" · last resort" if lv.get("last_resort") else "")
-                    st.markdown(md(f"**{cents(lv['cost_usd'])}** · {lv['name']}{tag}"))
-                    st.caption(md(lv["cost_basis"] + (f" · decide by {day_long(lv['deadline'])}" if lv.get("deadline") else "")))
+        with st.container(border=not bad):
+            p = cpost("/api/optimize", ver, {"scenario": SCENARIO})
+            if p["feasible"] and not p["levers"]:
+                st.markdown("### No action needed")
+                st.success("Cash stays above the reserve every day.")
+            elif p["feasible"]:
+                st.markdown(f"### Cheapest plan that keeps you safe every day: {md(cents(p['total_cost']))}")
+                repay = {r["lever"]: r for r in p["repayments"]}
+                lines = []
+                for lid in p["levers"]:
+                    detail = cents(costs.get(lid))
+                    if lid in repay:
+                        detail += f" interest; repay {cents(repay[lid]['amount'])} on {day_long(repay[lid]['date'])}"
+                    lines.append(f"<li>{names.get(lid, lid)} ({detail})</li>")
+                html(f"<ol style='padding-left:20px;line-height:1.6;font-size:17px'>{''.join(lines)}</ol>"
+                     f"<div class='cp-note'>ForeCash tested every combination of {len(levers)} options.</div>")
+            else:
+                st.markdown("### No safe plan")
+                st.error(md(p["note"]))
+            if p["levers"] or not p["feasible"]:
+                with st.expander("How ForeCash priced every option"):
+                    for lv in sorted(levers, key=lambda l: l["cost_usd"]):
+                        tag = " · ✅ in the plan" if lv["id"] in p["levers"] else (" · last resort" if lv.get("last_resort") else "")
+                        st.markdown(md(f"**{cents(lv['cost_usd'])}** · {lv['name']}{tag}"))
+                        st.caption(md(lv["cost_basis"] + (f" · decide by {day_long(lv['deadline'])}" if lv.get("deadline") else "")))
 
-    # ----- cost of waiting -----
+    # ----- cost of waiting (boxed card on a green week) -----
     with c_wait:
-        st.markdown("### What waiting costs you")
-        pts = cget("/api/cost-of-waiting", ver, scenario=SCENARIO)
-        nothing_to_decide = all(pt["feasible"] and not pt["total_cost"] for pt in pts)
-        if nothing_to_decide:
-            st.caption("Nothing to decide this week: you’re safe whichever day you look at it.")
-        else:
-            top = max([pt["total_cost"] for pt in pts if pt["feasible"]] or [1])
-            colors, heights, texts, labels = [], [], [], []
-            for i, pt in enumerate(pts):
-                labels.append(f"{as_date(pt['decision_date']):%a}")
-                if pt["feasible"]:
-                    heights.append(pt["total_cost"])
-                    texts.append(cents(pt["total_cost"]))
-                    colors.append(GREEN if i == 0 else AMBER)
-                else:
-                    heights.append(top)                     # full-height red bar, not a cost
-                    texts.append("No safe plan:<br>payroll missed")
-                    colors.append(RED)
-            bar = go.Figure(go.Bar(x=labels, y=heights, text=texts, textposition="outside",
-                                   marker_color=colors, cliponaxis=False, constraintext="none",
-                                   textfont=dict(size=14, color=INK)))
-            bar.update_layout(height=290, margin=dict(l=10, r=10, t=50, b=20), plot_bgcolor="#fff",
-                              paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=14, color=INK),
-                              yaxis=dict(visible=False),
-                              xaxis=dict(automargin=True, tickfont=dict(size=14)))
-            chart(bar)
-            parts = []
-            for i, pt in enumerate(pts):
-                when = "today" if i == 0 else f"{as_date(pt['decision_date']):%A}"
-                if pt["feasible"]:
-                    parts.append(f"Decide {when}: {money(pt['total_cost'])}.")
-                else:
-                    parts.append(f"Wait until {when}: you can’t make payroll.")
-            st.markdown(f"**{md(' '.join(parts))}**")
+        with st.container(border=not bad):
+            st.markdown("### What waiting costs you")
+            pts = cget("/api/cost-of-waiting", ver, scenario=SCENARIO)
+            nothing_to_decide = all(pt["feasible"] and not pt["total_cost"] for pt in pts)
+            if nothing_to_decide:
+                st.success("Nothing to decide this week: you’re safe whichever day you look at it.")
+            else:
+                top = max([pt["total_cost"] for pt in pts if pt["feasible"]] or [1])
+                colors, heights, texts, labels = [], [], [], []
+                for i, pt in enumerate(pts):
+                    labels.append(f"{as_date(pt['decision_date']):%a}")
+                    if pt["feasible"]:
+                        heights.append(pt["total_cost"])
+                        texts.append(cents(pt["total_cost"]))
+                        colors.append(GREEN if i == 0 else AMBER)
+                    else:
+                        heights.append(top)                     # full-height red bar, not a cost
+                        texts.append("No safe plan:<br>payroll missed")
+                        colors.append(RED)
+                bar = go.Figure(go.Bar(x=labels, y=heights, text=texts, textposition="outside",
+                                       marker_color=colors, cliponaxis=False, constraintext="none",
+                                       textfont=dict(size=14, color=INK)))
+                bar.update_layout(height=290, margin=dict(l=10, r=10, t=50, b=20), plot_bgcolor="#fff",
+                                  paper_bgcolor="#fff", font=dict(family="Manrope, sans-serif", size=14, color=INK),
+                                  yaxis=dict(visible=False),
+                                  xaxis=dict(automargin=True, tickfont=dict(size=14)))
+                chart(bar)
+                parts = []
+                for i, pt in enumerate(pts):
+                    when = "today" if i == 0 else f"{as_date(pt['decision_date']):%A}"
+                    if pt["feasible"]:
+                        parts.append(f"Decide {when}: {money(pt['total_cost'])}.")
+                    else:
+                        parts.append(f"Wait until {when}: you can’t make payroll.")
+                st.markdown(f"**{md(' '.join(parts))}**")
 
 
 forecast_section(ver, f, reserve)
@@ -786,41 +834,43 @@ def devrev_commitments_panel():
 
 devrev_commitments_panel()
 
-# ---------- AI analyst (left) + approvals and plan details (right) ----------
-c_ai, c_ok = st.columns(2, gap="medium")
+# ---------- AI analyst (left, red week only) + approvals and plan details (right) ----------
 right_sections = []
-
-with c_ai:
-    st.markdown("### What happened and why")
-    inv = next((a["investigation"] for a in alerts if a.get("investigation")), None)
-    if st.button("Investigate now"):
-        with st.spinner("ForeCash is checking the numbers…"):
-            try:
-                inv = post("/api/investigate", {"scenario": SCENARIO})
-            except Exception:
-                st.warning("The analysis is taking longer than expected. Try again in a moment.")
-    if inv:
-        offline = health["model_provider"] == "stub" or inv.get("mode") in ("template", "stub", "fallback")
-        if offline:
-            html("<span class='cp-pill' style='background:#FFF4CC'>AI offline: using built-in analysis.</span>")
-        else:
-            check = ("<span class='cp-pill' style='background:#DDF2EC;color:#0B5D57;font-weight:600'>"
-                     "✓ Every number checked against the engine</span>") if inv["verified"] else (
-                     f"<span class='cp-pill' style='background:#FCE4E2'>⚠ Unverified: {inv['unverified_amounts']}</span>")
-            tools = len({t["tool"] for t in inv["trace"]})
-            where = PROVIDERS.get(health["model_provider"], health["model_provider"])
-            html(f"{check}<span class='cp-pill' style='background:#EEF2F1'>Strands agent · AI on {where} · {tools} tools used</span>")
-        sections = split_memo(inv["memo"])
-        for title, body in sections:
-            if not title or title.lower().startswith(MEMO_LEFT):
-                memo_card(title, body)
+if trouble:
+    c_ai, c_ok = st.columns(2, gap="medium")
+    with c_ai:
+        st.markdown("### What happened and why")
+        inv = next((a["investigation"] for a in alerts if a.get("investigation")), None)
+        if st.button("Investigate now"):
+            with st.spinner("ForeCash is checking the numbers…"):
+                try:
+                    inv = post("/api/investigate", {"scenario": SCENARIO})
+                except Exception:
+                    st.warning("The analysis is taking longer than expected. Try again in a moment.")
+        if inv:
+            offline = health["model_provider"] == "stub" or inv.get("mode") in ("template", "stub", "fallback")
+            if offline:
+                html("<span class='cp-pill' style='background:#FFF4CC'>AI offline: using built-in analysis.</span>")
             else:
-                right_sections.append((title, body))
-        with st.expander(f"How the Strands agent worked: tool trace ({len(inv['trace'])} calls)"):
-            for t in inv["trace"]:
-                st.markdown(md(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}"))
-    else:
-        st.caption("ForeCash writes its analysis here when it spots a problem.")
+                check = ("<span class='cp-pill' style='background:#DDF2EC;color:#0B5D57;font-weight:600'>"
+                         "✓ Every number checked against the engine</span>") if inv["verified"] else (
+                         f"<span class='cp-pill' style='background:#FCE4E2'>⚠ Unverified: {inv['unverified_amounts']}</span>")
+                tools = len({t["tool"] for t in inv["trace"]})
+                where = PROVIDERS.get(health["model_provider"], health["model_provider"])
+                html(f"{check}<span class='cp-pill' style='background:#EEF2F1'>Strands agent · AI on {where} · {tools} tools used</span>")
+            sections = split_memo(inv["memo"])
+            for title, body in sections:
+                if not title or title.lower().startswith(MEMO_LEFT):
+                    memo_card(title, body)
+                else:
+                    right_sections.append((title, body))
+            with st.expander(f"How the Strands agent worked: tool trace ({len(inv['trace'])} calls)"):
+                for t in inv["trace"]:
+                    st.markdown(md(f"**{t['tool']}** · {t['ms']} ms · {t['output_summary']}"))
+        else:
+            st.caption("ForeCash writes its analysis here when it spots a problem.")
+else:
+    c_ok = st.container()     # green week: approvals use the full width
 
 with c_ok:
     st.markdown("### Ready for your approval")
