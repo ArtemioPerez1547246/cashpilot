@@ -591,7 +591,7 @@ RIDGELINE_TEXT = """
 <div class="cp-sms">
   <div class="cp-sms-top"><span class="cp-sms-app">��</span><span>MESSAGES</span><span style="margin-left:auto">now</span></div>
   <div class="cp-sms-from">Luis Pardo · Ridgeline Corp</div>
-  <div class="cp-sms-bubble">Hi Marisol, I’m really sorry. Our payment run moved because of the quarter close,
+  <div class="cp-sms-bubble">Hi Julian, I’m really sorry. Our payment run moved because of the quarter close,
   so invoice INV-2041 for &#36;4,000 will go out on Oct 21 instead of Oct 15. That’s 6 days late.
   Apologies for the trouble, and thank you for understanding. – Luis</div>
 </div>
